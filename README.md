@@ -67,3 +67,5 @@ Need help getting ServerlessWP installed? [Start a discussion](https://github.co
 GNU General Public License v3.0
 
 https://github.com/linamolygit/My-videos/raw/refs/heads/main/qzar8tnppfyf1.mp4
+https://github.com/user-attachments/assets/12e8451b-c916-41c2-8169-321b82bb335f
+https://github.com/user-attachments/assets/285e11ac-8718-4588-8376-edbb81f9c8f0
