@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystery Gift</title>
+    <style>
+        :root {
+            --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --yellow-glow: #FFEEA9;
+            --yellow-dark: #FFA500;
+            --yellow-light: #FFD700;
+        }
+
+        /* बेसिक सेटअप */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at bottom, #f0f4f8, #d9e2ec);
+            overflow: hidden;
+        }
+
+        /* मुख्य कंटेंट रैपर */
+        .main-content {
+            width: 100%; height: 100%; display: flex;
+            justify-content: center; align-items: center;
+            transition: filter 0.5s var(--ease-in-out-quint);
+        }
+
+        .main-content.blurred { filter: blur(8px); pointer-events: none; }
+
+        /* ग्लोइंग कार्ड कंटेनर */
+        .card-container {
+            position: relative; background-color: white;
+            padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 0 50px rgba(255, 255, 255, 0.9);
+            text-align: center; width: 90%; max-width: 400px;
+            overflow: hidden;
+        }
+
+        /* गिफ्ट बॉक्स एनिमेशन */
+        .gift-box {
+            position: relative; cursor: pointer; width: 180px;
+            margin: 0 auto;
+            animation: float 3s var(--ease-in-out-quint) infinite;
+        }
+        
+        .gift-box.shake { animation: shake-giftbox 0.5s var(--ease-in-out-quint); }
+        .gift-box img.gift-image { width: 100%; display: block; }
+
+        /* हाथ का एनिमेशन */
+        .hand-pointer {
+            position: absolute; width: 80px; bottom: -20px; right: -30px;
+            pointer-events: none;
+            animation: swoopAndTap 3s var(--ease-in-out-quint) infinite;
+            opacity: 0;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes shake-giftbox {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        @keyframes swoopAndTap {
+            0% { transform: translate(0, 0) rotate(20deg); opacity: 0; }
+            30% { opacity: 1; }
+            55% { transform: translate(-120px, -110px) rotate(-15deg); opacity: 1; }
+            65% { transform: translate(-123px, -105px) rotate(-20deg); }
+            75% { transform: translate(-120px, -110px) rotate(-15deg); }
+            90%, 100% { transform: translate(0, 0) rotate(20deg); opacity: 0; }
+        }
+
+        /* पॉपअप स्टाइलिंग */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.5s var(--ease-out-expo); z-index: 1000;
+        }
+        .popup-overlay.active { opacity: 1; visibility: visible; }
+        .popup-content {
+            background-color: white; padding: 2rem; border-radius: 16px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            text-align: center; width: 90%; max-width: 380px;
+            transform: scale(0.7); transition: transform 0.5s var(--ease-out-expo);
+        }
+        .popup-overlay.active .popup-content { transform: scale(1); }
+        .popup-content h2 { margin-bottom: 1rem; font-size: 1.5rem; color: #333; }
+        .popup-content img { max-width: 80%; margin-bottom: 1.5rem; }
+        .button-container { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+
+        /* बटन स्टाइलिंग */
+        .btn {
+            color: #412c00; padding: 12px 24px; border: none; border-radius: 50px;
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            transition: all 0.3s var(--ease-out-expo);
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            position: relative; overflow: hidden;
+            opacity: 0; transform: scale(0.5);
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+            background-color: transparent;
+            z-index: 1;
+        }
+
+        /* एनिमेटेड बॉर्डर और बैकग्राउंड */
+        .btn::before {
+            content: ''; position: absolute;
+            top: 50%; left: 50%;
+            width: 150%; height: 300%;
+            background: conic-gradient(transparent, var(--yellow-glow), transparent 30%);
+            animation: spin 2s linear infinite;
+            z-index: -2;
+        }
+        .btn::after {
+            content: ''; position: absolute;
+            top: 3px; left: 3px; right: 3px; bottom: 3px;
+            background: linear-gradient(135deg, var(--yellow-light), var(--yellow-dark));
+            border-radius: 50px;
+            z-index: -1;
+        }
+        
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* एनिमेशन्स */
+        .popup-overlay.active .btn {
+            animation: pop-in 0.5s var(--ease-out-expo) forwards,
+                       pulse-shadow 2.5s 0.5s infinite ease-in-out,
+                       shake-button 1s cubic-bezier(.36,.07,.19,.97) 0.5s both;
+        }
+        .popup-overlay.active .btn:nth-of-type(2) { animation-delay: 0.2s, 0.7s, 0.7s; }
+        @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse-shadow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 193, 7, 0.5); }
+            50% { box-shadow: 0 0 35px 10px rgba(255, 193, 7, 0.8); }
+        }
+        @keyframes shake-button {
+            10%, 90% { transform: scale(1) translate3d(-1px, 0, 0); }
+            20%, 80% { transform: scale(1) translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: scale(1) translate3d(-4px, 0, 0); }
+            40%, 60% { transform: scale(1) translate3d(4px, 0, 0); }
+        }
+
+        .btn:hover { transform: translateY(-3px) scale(1.05); }
+        .btn:active { transform: translateY(-1px) scale(1); }
+        
+        /* एग्जिट पॉपअप के 'No' बटन के लिए खास स्टाइल */
+        #exitBtnNo {
+            color: white;
+            animation: pop-in 0.5s 0.2s var(--ease-out-expo) forwards; /* सिर्फ पॉप-इन एनिमेशन */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #exitBtnNo::before { display: none; } /* स्पिनिंग बॉर्डर हटाएं */
+        #exitBtnNo::after { background: #222; } /* काला बैकग्राउंड */
+        #exitBtnNo:hover::after { background: #000; }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        <main class="card-container" id="mainCard">
+            <div class="gift-box" id="giftBox">
+                <img src="https://i.ibb.co/Q3YzvJQX/1762533948500-removebg-preview.png" alt="Mystery Gift Box" class="gift-image">
+            </div>
+            <img src="https://i.ibb.co/Z6b06GsJ/1762535147886-removebg-preview-1.png" alt="Tap Here" class="hand-pointer">
+        </main>
+    </div>
+
+    <div class="popup-overlay" id="claimPopup">
+        <div class="popup-content">
+            <img src="https://i.ibb.co/394mBPKm/Screenshot-2025-11-08-07-16-21-478-com-android-chrome-removebg-preview.png" alt="iPhone 17 Pro">
+            <div class="button-container">
+                <button class="btn" id="claimBtn1">Claim</button>
+                <button class="btn" id="claimBtn2">Free</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- एग्जिट इंटेंट पॉपअप -->
+    <div class="popup-overlay" id="exitPopup">
+        <div class="popup-content">
+            <h2>Want Mystery Gift?</h2>
+            <img src="https://i.ibb.co/394mBPKm/Screenshot-2025-11-08-07-16-21-478-com-android-chrome-removebg-preview.png" alt="iPhone 17 Pro">
+            <div class="button-container">
+                <button class="btn" id="exitBtnNo">No</button>
+                <button class="btn" id="exitBtnYes">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mainContent = document.querySelector('.main-content');
+        const giftBox = document.getElementById('giftBox');
+        const claimPopup = document.getElementById('claimPopup');
+        const exitPopup = document.getElementById('exitPopup');
+        const claimBtn1 = document.getElementById('claimBtn1');
+        const claimBtn2 = document.getElementById('claimBtn2');
+        const exitBtnNo = document.getElementById('exitBtnNo');
+        const exitBtnYes = document.getElementById('exitBtnYes');
+        
+        let buttonsClicked = false;
+        const redirectUrl = 'https://example.com';
+
+        const retryIconSvg = `<svg style="width:1.2em; height:1.2em; vertical-align: -0.2em;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`;
+
+        giftBox.addEventListener('click', () => {
+            if (window.navigator.vibrate) window.navigator.vibrate(100);
+            giftBox.classList.add('shake');
+            setTimeout(() => {
+                giftBox.classList.remove('shake');
+                mainContent.classList.add('blurred'); 
+                claimPopup.classList.add('active');
+            }, 500);
+        });
+
+        const handleClaimClick = () => {
+            if (buttonsClicked) {
+                window.open(redirectUrl, '_blank');
+                return;
+            }
+            window.open(redirectUrl, '_blank');
+            buttonsClicked = true;
+
+            claimBtn1.innerHTML = `${retryIconSvg} Try Again`;
+            claimBtn2.innerHTML = `${retryIconSvg} Try Again`;
+        };
+
+        claimBtn1.addEventListener('click', handleClaimClick);
+        claimBtn2.addEventListener('click', handleClaimClick);
+
+        // --- एग्जिट इंटेंट लॉजिक ---
+
+        const showExitPopup = (e) => {
+          // अगर क्लेम पॉपअप खुला है तो एग्जिट पॉपअप न दिखाएं
+          if (!claimPopup.classList.contains('active')) {
+            e.preventDefault(); // पेज को तुरंत बंद होने से रोकें
+            e.returnValue = ''; // पुराने ब्राउज़रों के लिए जरूरी
+            
+            mainContent.classList.add('blurred');
+            exitPopup.classList.add('active');
+          }
+        };
+
+        window.addEventListener('beforeunload', showExitPopup);
+
+        // एग्जिट पॉपअप बटनों के लिए क्लिक हैंडलर
+        exitBtnNo.addEventListener('click', () => {
+          // रीडायरेक्ट करने से पहले 'beforeunload' इवेंट को हटा दें ताकि यह ब्लॉक न हो
+          window.removeEventListener('beforeunload', showExitPopup);
+          window.location.href = 'https://videoyplay.blogspot.com/';
+        });
+
+        exitBtnYes.addEventListener('click', () => {
+          // पेज को रीलोड करने से पहले भी इवेंट को हटा दें
+           window.removeEventListener('beforeunload', showExitPopup);
+           location.reload();
+        });
+    </script>
+</body>
+              </html>
