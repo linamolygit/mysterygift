@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Slider</title>
+    <style>
+        /* बेसिक स्टाइल */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f0f2f5; /* हल्का बैकग्राउंड कलर */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px; /* चारों तरफ थोड़ी जगह */
+            box-sizing: border-box;
+        }
+
+        /* स्लाइडर कंटेनर का मेन रैपर */
+        .slider-wrapper-main {
+            width: 100%;
+            max-width: 900px; /* स्लाइडर का अधिकतम साइज़ बढ़ाया गया */
+        }
+        
+        /* स्लाइडर स्टाइल */
+        .slider-container {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* वाइडस्क्रीन अनुपात */
+            border-radius: 15px; /* गोल कोने */
+            overflow: hidden;
+            position: relative;
+            background-color: #000; /* इमेज लोड होने तक काला बैकग्राउंड */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12); /* गहरा शैडो */
+        }
+
+        .slider {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s ease-in-out;
+        }
+
+        .slider img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* पूरी इमेज दिखाने के लिए */
+            flex-shrink: 0;
+        }
+
+        /* स्लाइडर बटन्स (< >) का स्टाइल */
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 22px;
+            line-height: 1;
+            z-index: 2;
+            transition: background-color 0.3s ease;
+        }
+
+        .slider-btn:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .prev-btn { left: 15px; }
+        .next-btn { right: 15px; }
+
+        /* स्लाइडर डॉट्स का स्टाइल */
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background-color: #ffffff;
+            transform: scale(1.2);
+        }
+
+        /* मोबाइल डिवाइस के लिए */
+        @media (max-width: 600px) {
+            body { padding: 0; }
+            .slider-wrapper-main { max-width: 100%; }
+            .slider-container { border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slider-wrapper-main">
+        <div class="slider-container">
+            <a href="https://otieu.com/4/9967639" target="_blank" title="Watch Videos">
+                <div class="slider">
+                    <!-- Images yahan JavaScript se add hongi -->
+                </div>
+            </a>
+            <button class="slider-btn prev-btn">&#10094;</button>
+            <button class="slider-btn next-btn">&#10095;</button>
+            <div class="slider-dots"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- इमेज स्लाइडर के लिए जावास्क्रिप्ट ---
+
+        // =================================================================
+        // YAHAN APNE IMAGE LINKS ADD YA REMOVE KAREIN
+        // =================================================================
+        const imageUrls = [
+            "https://i.ibb.co/Mk7KJrJn/8ded9314e666.jpg",
+            "https://i.ibb.co/G3tJHXph/773c0a8fda66.jpg",
+            "https://i.ibb.co/Xxvr96G3/0a5fab2fb5a8.jpg",
+            "https://i.ibb.co/N66Qrws4/3c339e4c78bd.jpg"
+            // Naya link add karne ke liye, comma (,) lagakar neeche "link" paste karein
+        ];
+        // =================================================================
+
+        const slider = document.querySelector('.slider');
+        const prevBtn = document.querySelector('.prev-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const dotsContainer = document.querySelector('.slider-dots');
+
+        // Diye gaye links se images banana
+        imageUrls.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = `Slider Image ${index + 1}`;
+            slider.appendChild(img);
+        });
+
+        const totalImages = imageUrls.length;
+        let currentIndex = 0;
+        let slideInterval;
+
+        // डॉट्स बनाना
+        for (let i = 0; i < totalImages; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            dotsContainer.appendChild(dot);
+            dot.addEventListener('click', () => showSlide(i));
+        }
+        const dots = document.querySelectorAll('.dot');
+
+        function showSlide(index) {
+            currentIndex = index;
+            slider.style.transform = `translateX(${-currentIndex * 100}%)`;
+            dots.forEach(dot => dot.classList.remove('active'));
+            dots[currentIndex].classList.add('active');
+            resetInterval();
+        }
+
+        function nextSlide() {
+            currentIndex = (currentIndex + 1) % totalImages;
+            showSlide(currentIndex);
+        }
+
+        function prevSlide() {
+            currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+            showSlide(currentIndex);
+        }
+
+        function resetInterval() {
+            clearInterval(slideInterval);
+            slideInterval = setInterval(nextSlide, 3000);
+        }
+
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            nextSlide();
+        });
+
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            prevSlide();
+        });
+        
+        showSlide(0);
+
+        // =================================================================
+        // --- नया कोड: बैक बटन डिटेक्शन और काउंटर के लिए ---
+        // =================================================================
+
+        const videoUrl = "https://otieu.com/4/9967639"; // यह आपका वीडियो लिंक है
+        let backButtonClickCount = 0;
+        const clicksNeeded = 5; // वीडियो लिंक पर जाने के लिए जरूरी क्लिक्स
+
+        // जब पेज लोड होता है, तो हिस्ट्री में एक नकली स्टेट जोड़ें
+        // ताकि जब यूज़र पहली बार बैक बटन दबाए तो हम उसे डिटेक्ट कर सकें
+        history.pushState(null, document.title, location.href);
+
+        // 'popstate' इवेंट को सुनें, यह तब चलता है जब बैक बटन दबाया जाता है
+        window.addEventListener('popstate', function (event) {
+            
+            // यूज़र को उसी पेज पर रखने के लिए फिर से स्टेट पुश करें
+            history.pushState(null, document.title, location.href);
+            
+            backButtonClickCount++; // काउंटर को 1 से बढ़ाएं
+
+            if (backButtonClickCount >= clicksNeeded) {
+                // अगर 5 या उससे ज्यादा क्लिक हो गए हैं, तो वीडियो लिंक पर भेज दें
+                window.location.href = videoUrl;
+            } else {
+                // अगर नहीं, तो मैसेज और काउंटर दिखाएं
+                showAlertMessage();
+            }
+        });
+
+        function showAlertMessage() {
+            // अगर स्क्रीन पर पहले से कोई मैसेज है, तो उसे हटा दें
+            let existingOverlay = document.getElementById('custom-alert-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+
+            // मैसेज दिखाने के लिए एक फुल-स्क्रीन ओवरले बनाएं
+            const overlay = document.createElement('div');
+            overlay.id = 'custom-alert-overlay';
+            // ओवरले की स्टाइलिंग
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+            overlay.style.color = 'white';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.style.zIndex = '9999';
+            overlay.style.textAlign = 'center';
+            overlay.style.flexDirection = 'column';
+            overlay.style.padding = '20px';
+            overlay.style.boxSizing = 'border-box';
+
+            // मुख्य मैसेज बनाने के लिए
+            const message = document.createElement('p');
+            message.style.fontSize = '22px';
+            message.style.margin = '0 0 15px 0';
+            const clicksRemaining = clicksNeeded - backButtonClickCount;
+            // यूज़र को बताएं कि कितने क्लिक्स बाकी हैं
+            message.textContent = `अभी आपको वीडियो देखने के लिए ${clicksRemaining} बार और क्लिक करना है।`;
+
+            // काउंटर दिखाने के लिए
+            const counterDisplay = document.createElement('p');
+            counterDisplay.style.fontSize = '18px';
+            counterDisplay.style.margin = '0';
+            counterDisplay.style.opacity = '0.8';
+            counterDisplay.textContent = `(कुल क्लिक्स: ${backButtonClickCount})`;
+
+            // बनाए गए एलिमेंट्स को ओवरले में जोड़ें
+            overlay.appendChild(message);
+            overlay.appendChild(counterDisplay);
+            // और ओवरले को पेज में जोड़ें
+            document.body.appendChild(overlay);
+
+            // 2.5 सेकंड के बाद मैसेज को अपने आप हटा दें
+            setTimeout(() => {
+                if (overlay) {
+                    overlay.remove();
+                }
+            }, 2500);
+        }
+
+    </script>
+
+</body>
+  </html>
