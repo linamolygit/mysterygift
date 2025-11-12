@@ -1,71 +1,288 @@
-# Host WordPress On Vercel, Netlify, or AWS
-WordPress hosting is silly. Serverless WordPress on Vercel, Netlify, or AWS Lambda.
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Slider</title>
+    <style>
+        /* बेसिक स्टाइल */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f0f2f5; /* हल्का बैकग्राउंड कलर */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px; /* चारों तरफ थोड़ी जगह */
+            box-sizing: border-box;
+        }
 
-| Vercel (recommended) | Netlify | AWS with Serverless Framework |
-| --- | --- | --- |
-| [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmitchmac%2Fserverlesswp&env=DATABASE,USERNAME,PASSWORD,HOST&envDescription=Database%20credentials%20from%20PlanetScale%20or%20other%20host&envLink=https%3A%2F%2Fgithub.com%2Fmitchmac%2FServerlessWP%23setup-vercel-or-netlify&project-name=serverlesswp&repository-name=serverlesswp) |  [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mitchmac/serverlesswp) | ```npm install && serverless deploy```
+        /* स्लाइडर कंटेनर का मेन रैपर */
+        .slider-wrapper-main {
+            width: 100%;
+            max-width: 900px; /* स्लाइडर का अधिकतम साइज़ बढ़ाया गया */
+        }
+        
+        /* स्लाइडर स्टाइल */
+        .slider-container {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* वाइडस्क्रीन अनुपात */
+            border-radius: 15px; /* गोल कोने */
+            overflow: hidden;
+            position: relative;
+            background-color: #000; /* इमेज लोड होने तक काला बैकग्राउंड */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12); /* गहरा शैडो */
+        }
 
-### Quick install video
+        .slider {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s ease-in-out;
+        }
 
-[![](https://markdown-videos.vercel.app/youtube/A1HZB2OqpCY)](https://youtu.be/A1HZB2OqpCY)
+        .slider img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* पूरी इमेज दिखाने के लिए */
+            flex-shrink: 0;
+        }
 
-## Project goals
+        /* स्लाइडर बटन्स (< >) का स्टाइल */
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 22px;
+            line-height: 1;
+            z-index: 2;
+            transition: background-color 0.3s ease;
+        }
 
-✅ Maintaining servers for WordPress can be a pain. Serverless hosting should be less work.
+        .slider-btn:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
 
-✅ Small WordPress sites shouldn't cost much (or anything) to host. **Vercel, Netlify, AWS, & PlanetScale have free tiers**.
+        .prev-btn { left: 15px; }
+        .next-btn { right: 15px; }
 
-✅ WordPress plugins and themes save time and should be extensively supported.
+        /* स्लाइडर डॉट्स का स्टाइल */
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
 
-✅ Edge caching can give us blazing fast websites.
+        .dot {
+            width: 12px;
+            height: 12px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-✅ We can reduce the carbon footprint of WordPress websites.
+        .dot.active {
+            background-color: #ffffff;
+            transform: scale(1.2);
+        }
 
-✅ We can create a helpful community. [Share your successes, knowledge, ideas, or struggles](https://github.com/mitchmac/ServerlessWP/discussions) in the discussions.
+        /* मोबाइल डिवाइस के लिए */
+        @media (max-width: 600px) {
+            body { padding: 0; }
+            .slider-wrapper-main { max-width: 100%; }
+            .slider-container { border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
 
-## Deploying ServerlessWP
+    <div class="slider-wrapper-main">
+        <div class="slider-container">
+            <a href="https://otieu.com/4/9967639" target="_blank" title="Watch Videos">
+                <div class="slider">
+                    <!-- Images yahan JavaScript se add hongi -->
+                </div>
+            </a>
+            <button class="slider-btn prev-btn">&#10094;</button>
+            <button class="slider-btn next-btn">&#10095;</button>
+            <div class="slider-dots"></div>
+        </div>
+    </div>
 
-**This is currently an experimental project and shouldn't be used when considerable security or stability is required, yet**
+    <script>
+        // --- इमेज स्लाइडर के लिए जावास्क्रिप्ट ---
 
-1. **Create a MySQL database** that can be accessed from Vercel or Netlify.
+        // =================================================================
+        // YAHAN APNE IMAGE LINKS ADD YA REMOVE KAREIN
+        // =================================================================
+        const imageUrls = [
+            "https://i.ibb.co/Mk7KJrJn/8ded9314e666.jpg",
+            "https://i.ibb.co/G3tJHXph/773c0a8fda66.jpg",
+            "https://i.ibb.co/Xxvr96G3/0a5fab2fb5a8.jpg",
+            "https://i.ibb.co/N66Qrws4/3c339e4c78bd.jpg"
+            // Naya link add karne ke liye, comma (,) lagakar neeche "link" paste karein
+        ];
+        // =================================================================
 
-The easiest way to do this is with [PlanetScale](https://planetscale.com/) which has a free tier to get started. When using PlanetScale, make sure your database's region matches the region that Vercel or Netlify will use. This is usually ```us-east-1```.
+        const slider = document.querySelector('.slider');
+        const prevBtn = document.querySelector('.prev-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const dotsContainer = document.querySelector('.slider-dots');
 
-2. **Deploy this repository to Vercel, Netlify, or AWS.** One of the links above will get you started. You'll just need a GitHub account.
+        // Diye gaye links se images banana
+        imageUrls.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = `Slider Image ${index + 1}`;
+            slider.appendChild(img);
+        });
 
-If deploying to AWS with the Serverless Framework for the first time, check the [Serverless Framework docs](https://www.serverless.com/framework/docs/getting-started) to get up to speed and run ```serverless deploy``` when ready.
+        const totalImages = imageUrls.length;
+        let currentIndex = 0;
+        let slideInterval;
 
-3. **Update the environment variables** for your project in Vercel or Netlify with the database credentials from PlanetScale or wherever you host the MySQL database. The WordPress config file ```wp-config.php``` uses these values to connect to the database. The environment variables are:
-- DATABASE
-- USERNAME
-- PASSWORD
-- HOST
+        // डॉट्स बनाना
+        for (let i = 0; i < totalImages; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            dotsContainer.appendChild(dot);
+            dot.addEventListener('click', () => showSlide(i));
+        }
+        const dots = document.querySelectorAll('.dot');
 
-For more information about creating environment variables, see [here for Vercel](https://vercel.com/docs/concepts/projects/environment-variables) and [here for Netlify](https://docs.netlify.com/environment-variables/overview/). Remember to redeploy your project after updating the environment variables if you update them after initially deploying your project.
+        function showSlide(index) {
+            currentIndex = index;
+            slider.style.transform = `translateX(${-currentIndex * 100}%)`;
+            dots.forEach(dot => dot.classList.remove('active'));
+            dots[currentIndex].classList.add('active');
+            resetInterval();
+        }
 
-4. (optional, can be done later) File and media uploads can be enabled using the included WP Offload Media Lite for Amazon S3 plugin. S3 setup details can be found [here](https://deliciousbrains.com/wp-offload-media/doc/amazon-s3-quick-start-guide/). The wp-config.php file is setup to use the following environment variables for use by the plugin:
-- S3_KEY_ID
-- S3_ACCESS_KEY
+        function nextSlide() {
+            currentIndex = (currentIndex + 1) % totalImages;
+            showSlide(currentIndex);
+        }
 
-## Customizing WordPress
-- WordPress and its files are in the ```/wp``` directory. You can add plugins or themes there in their respective directories in ```wp-content```
-- Plugins like [Cache-Control](https://wordpress.org/plugins/cache-control/) can enable CDN caching with the s-maxage directive and make your site super fast. Refer to [Vercel Edge Caching](https://vercel.com/docs/concepts/edge-network/caching) or [Netlfiy Cache Headers](https://docs.netlify.com/edge-functions/optional-configuration/#supported-headers)
+        function prevSlide() {
+            currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+            showSlide(currentIndex);
+        }
 
-## Project structure
-- `netlify.toml` or `vercel.json` are where we configure ```/api/index.js``` to handle all requests
-- [mitchmac/serverlesswp-node](https://github.com/mitchmac/serverlesswp-node) is used to run PHP and handle the request
-- You can modify the incoming request through the ```event``` object in api/index.js. You can also modify the WordPress ```response``` object there.
+        function resetInterval() {
+            clearInterval(slideInterval);
+            slideInterval = setInterval(nextSlide, 3000);
+        }
 
-## Getting help
-Need help getting ServerlessWP installed? [Start a discussion](https://github.com/mitchmac/ServerlessWP/discussions) or [e-mail Mitch](mailto:wp@mitchmac.dev)
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            nextSlide();
+        });
 
-## How can you help?
-- Just using ServerlessWP and [reporting any problems you experience](https://github.com/mitchmac/ServerlessWP/issues) is a fantastic way to help!
-- Spread the word! Let's try to make WordPress hosting better.
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            prevSlide();
+        });
+        
+        showSlide(0);
 
-## License
-GNU General Public License v3.0
+        // =================================================================
+        // --- नया कोड: बैक बटन डिटेक्शन और काउंटर के लिए ---
+        // =================================================================
 
-https://github.com/linamolygit/My-videos/raw/refs/heads/main/qzar8tnppfyf1.mp4
-https://github.com/user-attachments/assets/12e8451b-c916-41c2-8169-321b82bb335f
-https://github.com/user-attachments/assets/285e11ac-8718-4588-8376-edbb81f9c8f0
+        const videoUrl = "https://otieu.com/4/9967639"; // यह आपका वीडियो लिंक है
+        let backButtonClickCount = 0;
+        const clicksNeeded = 5; // वीडियो लिंक पर जाने के लिए जरूरी क्लिक्स
+
+        // जब पेज लोड होता है, तो हिस्ट्री में एक नकली स्टेट जोड़ें
+        // ताकि जब यूज़र पहली बार बैक बटन दबाए तो हम उसे डिटेक्ट कर सकें
+        history.pushState(null, document.title, location.href);
+
+        // 'popstate' इवेंट को सुनें, यह तब चलता है जब बैक बटन दबाया जाता है
+        window.addEventListener('popstate', function (event) {
+            
+            // यूज़र को उसी पेज पर रखने के लिए फिर से स्टेट पुश करें
+            history.pushState(null, document.title, location.href);
+            
+            backButtonClickCount++; // काउंटर को 1 से बढ़ाएं
+
+            if (backButtonClickCount >= clicksNeeded) {
+                // अगर 5 या उससे ज्यादा क्लिक हो गए हैं, तो वीडियो लिंक पर भेज दें
+                window.location.href = videoUrl;
+            } else {
+                // अगर नहीं, तो मैसेज और काउंटर दिखाएं
+                showAlertMessage();
+            }
+        });
+
+        function showAlertMessage() {
+            // अगर स्क्रीन पर पहले से कोई मैसेज है, तो उसे हटा दें
+            let existingOverlay = document.getElementById('custom-alert-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+
+            // मैसेज दिखाने के लिए एक फुल-स्क्रीन ओवरले बनाएं
+            const overlay = document.createElement('div');
+            overlay.id = 'custom-alert-overlay';
+            // ओवरले की स्टाइलिंग
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+            overlay.style.color = 'white';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.style.zIndex = '9999';
+            overlay.style.textAlign = 'center';
+            overlay.style.flexDirection = 'column';
+            overlay.style.padding = '20px';
+            overlay.style.boxSizing = 'border-box';
+
+            // मुख्य मैसेज बनाने के लिए
+            const message = document.createElement('p');
+            message.style.fontSize = '22px';
+            message.style.margin = '0 0 15px 0';
+            const clicksRemaining = clicksNeeded - backButtonClickCount;
+            // यूज़र को बताएं कि कितने क्लिक्स बाकी हैं
+            message.textContent = `अभी आपको वीडियो देखने के लिए ${clicksRemaining} बार और क्लिक करना है।`;
+
+            // काउंटर दिखाने के लिए
+            const counterDisplay = document.createElement('p');
+            counterDisplay.style.fontSize = '18px';
+            counterDisplay.style.margin = '0';
+            counterDisplay.style.opacity = '0.8';
+            counterDisplay.textContent = `(कुल क्लिक्स: ${backButtonClickCount})`;
+
+            // बनाए गए एलिमेंट्स को ओवरले में जोड़ें
+            overlay.appendChild(message);
+            overlay.appendChild(counterDisplay);
+            // और ओवरले को पेज में जोड़ें
+            document.body.appendChild(overlay);
+
+            // 2.5 सेकंड के बाद मैसेज को अपने आप हटा दें
+            setTimeout(() => {
+                if (overlay) {
+                    overlay.remove();
+                }
+            }, 2500);
+        }
+
+    </script>
+
+</body>
+</html>
