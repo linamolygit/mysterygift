@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-light: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --bg-gradient-dark: linear-gradient(135deg, #232526 0%, #414345 100%);
+            --card-bg-light: rgba(255, 255, 255, 0.7);
+            --card-bg-dark: rgba(30, 30, 30, 0.7);
+            --text-color-light: #1c1c1c;
+            --text-color-dark: #f0f0f0;
+            --modal-bg-light: #ffffff;
+            --modal-bg-dark: #2c2c2c;
+            --button-gradient: linear-gradient(45deg, #007bff, #0056b3);
+            --illusion-btn-gradient: linear-gradient(45deg, #8a2be2, #4b0082);
+            --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            --shadow-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glow-color: #007bff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--bg-gradient-light); color: var(--text-color-light); transition: background 0.5s, color 0.5s;
+        }
+        body.dark-theme { background: var(--bg-gradient-dark); color: var(--text-color-dark); --glow-color: #4dabf7;}
+
+        @keyframes fadeInSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .container {
+            width: 100%; max-width: 600px; padding: 30px; border-radius: 15px; background: var(--card-bg-light); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: var(--shadow-light); animation: fadeInSlideUp 0.8s ease-out forwards;
+        }
+        body.dark-theme .container { background: var(--card-bg-dark); box-shadow: var(--shadow-dark); }
+        
+        .theme-switcher-container { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .theme-switcher { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .theme-switcher input { opacity: 0; width: 0; height: 0; }
+        .theme-switcher .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .theme-switcher .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .theme-switcher input:checked + .slider { background: #007bff; }
+        .theme-switcher input:checked + .slider:before { transform: translateX(26px); }
+
+        h1 { text-align: center; font-weight: 600; margin-bottom: 30px; }
+        label { display: block; margin-bottom: 8px; font-weight: 400; }
+        
+        .input-container, .color-selection, .aspect-ratio-container { margin-bottom: 25px; }
+        input[type="number"] { box-sizing: border-box; width: 100%; padding: 10px; border: none; border-bottom: 2px solid #ccc; background-color: transparent; color: inherit; font-family: 'Poppins', sans-serif; font-size: 16px; transition: border-color 0.3s; }
+        input[type="number"]:focus { outline: none; border-color: #007bff; }
+        .input-row { display: flex; align-items: center; gap: 15px; }
+        #number-input { flex-grow: 1; }
+        .digit-toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+        .digit-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .digit-toggle-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+        .digit-toggle-switch .slider:before { position: absolute; content: "3D"; color: #333; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .digit-toggle-switch input:checked + .slider { background-color: #28a745; }
+        .digit-toggle-switch input:checked + .slider:before { content: "4D"; transform: translateX(22px); }
+
+        .color-selection { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+        .color-option { width: 48%; }
+        .general-colors { display: flex; align-items: center; gap: 10px; }
+        .color-box, .custom-color-picker-trigger { width: 30px; height: 30px; border: 2px solid #ccc; cursor: pointer; border-radius: 50%; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
+        .color-box:hover, .custom-color-picker-trigger:hover { transform: scale(1.15); }
+        .selected { transform: scale(1.15); box-shadow: 0 0 0 3px var(--card-bg-light), 0 0 0 5px var(--glow-color); }
+        .custom-color-picker-trigger { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); border-color: #999; }
+
+        .button { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; text-align: center; text-decoration: none; font-size: 18px; font-weight: 600; color: #ffffff; transition: transform 0.2s, box-shadow 0.3s; }
+        #generate-btn { background: var(--button-gradient); }
+        #generate-btn:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4); }
+        .output-card { margin-top: 30px; padding: 20px; border-radius: 10px; text-align: center; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+        .output-card.visible { opacity: 1; transform: translateY(0); }
+        #preview-image { max-width: 100%; height: auto; margin-bottom: 15px; border-radius: 8px; border: 2px solid #eee; }
+        .button-group { display: flex; gap: 15px; margin-top: 10px; }
+        .button-group .button { flex: 1; }
+        #download-btn { background: var(--button-gradient); }
+        #illusion-btn { background: var(--illusion-btn-gradient); }
+
+        .custom-select-trigger { width: 100%; padding: 10px; border: none; border-bottom: 2px solid #ccc; background-color: transparent; color: inherit; font-family: 'Poppins', sans-serif; font-size: 16px; text-align: left; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .modal-content { position: relative; background-color: var(--modal-bg-light); color: inherit; margin: 10% auto; padding: 25px; border-radius: 10px; width: 90%; max-width: 500px; animation: fadeInSlideUp 0.5s; box-shadow: 0 5px 25px rgba(0,0,0,0.2); }
+        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-section h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .modal-options { display: flex; flex-wrap: wrap; gap: 10px; }
+        .modal-option { padding: 8px 15px; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; }
+        .modal-option.selected { background-color: var(--glow-color); color: white; border-color: var(--glow-color); }
+        
+        #color-picker-modal .modal-content { max-width: 300px; }
+        .palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 15px; justify-items: center; }
+        .palette-color { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .palette-color:hover { transform: scale(1.1); }
+        
+        #custom-alert-modal .modal-content { max-width: 400px; text-align: center; }
+        #custom-alert-ok { background: var(--button-gradient); color: white; border: none; padding: 10px 30px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Image Generator</h1>
+        <div class="input-container">
+            <label>Random Number (3D/4D)</label>
+            <div class="input-row">
+                <input type="number" id="number-input">
+                <label class="digit-toggle-switch"> <input type="checkbox" id="digit-toggle"> <span class="slider"></span> </label>
+            </div>
+        </div>
+        <div class="color-selection">
+            <div class="color-option">
+                <label>Background Color</label>
+                <div class="general-colors" id="bg-colors">
+                    <div class="color-box selected" style="background-color: #ffffff;" data-color="#ffffff"></div>
+                    <div class="color-box" style="background-color: #f0f0f0;" data-color="#f0f0f0"></div>
+                    <div class="color-box" style="background-color: #d3d3d3;" data-color="#d3d3d3"></div>
+                    <button class="custom-color-picker-trigger" id="bg-picker-trigger" data-type="bg"></button>
+                    <input type="color" id="bg-color-picker" value="#ffffff" style="display:none;">
+                </div>
+            </div>
+            <div class="color-option">
+                <label>Text Color</label>
+                <div class="general-colors" id="text-colors">
+                    <div class="color-box selected" style="background-color: #000000;" data-color="#000000"></div>
+                    <div class="color-box" style="background-color: #333333;" data-color="#333333"></div>
+                    <div class="color-box" style="background-color: #d32f2f;" data-color="#d32f2f"></div>
+                    <button class="custom-color-picker-trigger" id="text-picker-trigger" data-type="text"></button>
+                    <input type="color" id="text-color-picker" value="#000000" style="display:none;">
+                </div>
+            </div>
+        </div>
+        <div class="aspect-ratio-container">
+            <label>Aspect Ratio & Resolution</label>
+            <button id="aspect-ratio-trigger" class="custom-select-trigger">1:1 (Square) - 720p</button>
+        </div>
+        <button id="generate-btn" class="button">Generate Image</button>
+        <div id="output-card" class="output-card" style="display: none;">
+            <h2>Preview</h2>
+            <canvas id="image-canvas" style="display: none;"></canvas>
+            <img id="preview-image" src="" alt="Generated Image">
+            <div class="button-group">
+                <a id="download-btn" class="button" href="" download="generated-image.png">Download Image</a>
+                <a id="illusion-btn" class="button" href="https://huggingface.co/spaces/AP123/IllusionDiffusion" target="_blank" rel="noopener noreferrer">Illusion Diffusion</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="aspect-ratio-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-section">
+                <h3>Aspect Ratio</h3>
+                <div id="ratio-options" class="modal-options">
+                    <div class="modal-option selected" data-value="1:1">1:1 (Square)</div>
+                    <div class="modal-option" data-value="16:9">16:9 (Landscape)</div>
+                    <div class="modal-option" data-value="9:16">9:16 (Portrait)</div>
+                    <div class="modal-option" data-value="4:3">4:3 (Classic)</div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <h3>Resolution (Longest Side)</h3>
+                <div id="resolution-options" class="modal-options">
+                    <div class="modal-option" data-value="480">480p</div>
+                    <div class="modal-option selected" data-value="720">720p (HD)</div>
+                    <div class="modal-option" data-value="1080">1080p (Full HD)</div>
+                    <div class="modal-option" data-value="2160">4K</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="custom-alert-modal" class="modal">
+        <div class="modal-content">
+            <p id="custom-alert-message"></p>
+            <button id="custom-alert-ok">OK</button>
+        </div>
+    </div>
+    <div id="color-picker-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-section">
+                <h3>Choose a Color</h3>
+                <div class="palette-grid" id="palette-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let imageDownloaded = false, currentAspectRatio = '1:1', currentResolution = 720;
+            let activeColorPickerType = 'bg';
+
+            const numberInput = document.getElementById('number-input'), digitToggle = document.getElementById('digit-toggle');
+            const bgColorPicker = document.getElementById('bg-color-picker'), textColorPicker = document.getElementById('text-color-picker');
+            const bgPickerTrigger = document.getElementById('bg-picker-trigger'), textPickerTrigger = document.getElementById('text-picker-trigger');
+            const bgColorsContainer = document.getElementById('bg-colors'), textColorsContainer = document.getElementById('text-colors');
+            const generateBtn = document.getElementById('generate-btn');
+            
+            const outputCard = document.getElementById('output-card'), canvas = document.getElementById('image-canvas');
+            const previewImage = document.getElementById('preview-image'), downloadBtn = document.getElementById('download-btn');
+            const illusionBtn = document.getElementById('illusion-btn');
+
+            const arModal = document.getElementById('aspect-ratio-modal'), colorModal = document.getElementById('color-picker-modal');
+            const alertModal = document.getElementById('custom-alert-modal'), paletteGrid = document.getElementById('palette-grid');
+            const arTrigger = document.getElementById('aspect-ratio-trigger'), ratioOptions = document.getElementById('ratio-options');
+            const resolutionOptions = document.getElementById('resolution-options'), alertMessage = document.getElementById('custom-alert-message');
+            const alertOkBtn = document.getElementById('custom-alert-ok');
+
+            const PALETTE_COLORS = [ '#FF4136', '#FF851B', '#FFDC00', '#2ECC40', '#0074D9', '#B10DC9', '#F012BE', '#7FDBFF', '#39CCCC', '#3D9970', '#01FF70', '#85144b', '#AAAAAA', '#DDDDDD', '#FFFFFF', '#111111' ];
+
+            function setRandomNumber() {
+                const is4Digit = digitToggle.checked;
+                const min = is4Digit ? 1000 : 100;
+                const max = is4Digit ? 9999 : 999;
+                numberInput.value = Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            setRandomNumber();
+            digitToggle.addEventListener('change', setRandomNumber);
+
+            function updateSelection(container, selectedElement) {
+                container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                if (selectedElement) selectedElement.classList.add('selected');
+            }
+
+            [bgColorsContainer, textColorsContainer].forEach(container => {
+                container.addEventListener('click', e => {
+                    const target = e.target;
+                    if (target.classList.contains('color-box')) {
+                        const color = target.dataset.color;
+                        if (container.id === 'bg-colors') bgColorPicker.value = color; else textColorPicker.value = color;
+                        updateSelection(container, target);
+                    } else if (target.classList.contains('custom-color-picker-trigger')) {
+                        activeColorPickerType = target.dataset.type;
+                        openColorModal();
+                    }
+                });
+            });
+            
+            function openColorModal() {
+                paletteGrid.innerHTML = '';
+                PALETTE_COLORS.forEach(color => {
+                    const colorDiv = document.createElement('div');
+                    colorDiv.className = 'palette-color';
+                    colorDiv.style.backgroundColor = color;
+                    colorDiv.dataset.color = color;
+                    paletteGrid.appendChild(colorDiv);
+                });
+                colorModal.style.display = 'block';
+            }
+
+            paletteGrid.addEventListener('click', e => {
+                if (e.target.classList.contains('palette-color')) {
+                    const color = e.target.dataset.color;
+                    if (activeColorPickerType === 'bg') {
+                        bgColorPicker.value = color;
+                        updateSelection(bgColorsContainer, bgPickerTrigger);
+                    } else {
+                        textColorPicker.value = color;
+                        updateSelection(textColorsContainer, textPickerTrigger);
+                    }
+                    colorModal.style.display = 'none';
+                }
+            });
+
+            document.querySelectorAll('.modal-close').forEach(btn => btn.onclick = () => btn.closest('.modal').style.display = 'none');
+            window.onclick = (e) => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
+
+            function showAlert(message) {
+                alertMessage.textContent = message;
+                alertModal.style.display = 'block';
+            }
+            alertOkBtn.onclick = () => alertModal.style.display = 'none';
+
+            function updateArTriggerText() {
+                const ratioText = ratioOptions.querySelector('.selected').textContent;
+                const resText = resolutionOptions.querySelector('.selected').textContent;
+                arTrigger.textContent = `${ratioText} - ${resText}`;
+            }
+            arTrigger.onclick = () => arModal.style.display = "block";
+            ratioOptions.addEventListener('click', e => { if (e.target.classList.contains('modal-option')) { ratioOptions.querySelectorAll('.selected').forEach(opt => opt.classList.remove('selected')); e.target.classList.add('selected'); currentAspectRatio = e.target.dataset.value; updateArTriggerText(); } });
+            resolutionOptions.addEventListener('click', e => { if (e.target.classList.contains('modal-option')) { resolutionOptions.querySelectorAll('.selected').forEach(opt => opt.classList.remove('selected')); e.target.classList.add('selected'); currentResolution = parseInt(e.target.dataset.value, 10); updateArTriggerText(); } });
+
+            // --- THIS IS THE FIXED PART ---
+            generateBtn.addEventListener('click', () => {
+                imageDownloaded = false;
+                const number = numberInput.value;
+                if (!number) { showAlert('Please enter a number first.'); return; }
+
+                const bgColor = bgColorPicker.value;
+                const textColor = textColorPicker.value;
+                const ctx = canvas.getContext('2d');
+                const [ratioW, ratioH] = currentAspectRatio.split(':').map(Number);
+                const baseSize = currentResolution;
+
+                canvas.width = (ratioW >= ratioH) ? baseSize : (baseSize / ratioH) * ratioW;
+                canvas.height = (ratioW < ratioH) ? baseSize : (baseSize / ratioW) * ratioH;
+                
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                let fontSize = Math.min(canvas.width, canvas.height) * 0.8;
+                ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+                while (ctx.measureText(number).width > canvas.width * 0.90) {
+                    fontSize--;
+                    ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+                }
+
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(number, canvas.width / 2, canvas.height / 2);
+
+                const dataUrl = canvas.toDataURL('image/png');
+                previewImage.src = dataUrl;
+                downloadBtn.href = dataUrl;
+                
+                outputCard.style.display = 'block';
+                setTimeout(() => outputCard.classList.add('visible'), 10);
+                setTimeout(() => outputCard.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+            });
+
+            downloadBtn.addEventListener('click', () => { imageDownloaded = true; });
+            illusionBtn.addEventListener('click', (e) => { if (!imageDownloaded) { e.preventDefault(); showAlert('Please download the generated image before proceeding.'); } });
+        });
+    </script>
+</body>
+</html>
