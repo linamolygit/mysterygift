@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Number Image Generator</title>
+    <style>
+        /* CSS Code Starts Here */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --container-bg: #f5f5f5;
+            --input-bg: #ffffff;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-theme {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --container-bg: #1e1e1e;
+            --input-bg: #2c2c2c;
+            --button-bg: #0056b3;
+            --button-text: #ffffff;
+            --shadow-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .theme-switcher-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .theme-switcher {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-switcher input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .input-container, .color-selection {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="number"], input[type="color"] {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .color-selection {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .color-option {
+            width: 48%;
+        }
+
+        .general-colors {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .color-box {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button, .button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        button:hover, .button:hover {
+            opacity: 0.9;
+        }
+
+        .output-card {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HTML Code Starts Here -->
+    <div class="container">
+        <div class="theme-switcher-container">
+            <label class="theme-switcher">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <h1>Text Number Image Generator</h1>
+
+        <div class="input-container">
+            <label for="number-input">Enter a Number:</label>
+            <input type="number" id="number-input" placeholder="e.g., 123">
+        </div>
+
+        <div class="color-selection">
+            <div class="color-option">
+                <label>Background Color:</label>
+                <div class="general-colors" id="bg-general-colors">
+                    <div class="color-box" style="background-color: #ffffff;" data-color="#ffffff"></div>
+                    <div class="color-box" style="background-color: #f0f0f0;" data-color="#f0f0f0"></div>
+                    <div class="color-box" style="background-color: #d3d3d3;" data-color="#d3d3d3"></div>
+                    <div class="color-box" style="background-color: #add8e6;" data-color="#add8e6"></div>
+                </div>
+                <input type="color" id="bg-color-picker" value="#ffffff">
+            </div>
+            <div class="color-option">
+                <label>Text Color:</label>
+                <div class="general-colors" id="text-general-colors">
+                    <div class="color-box" style="background-color: #000000;" data-color="#000000"></div>
+                    <div class="color-box" style="background-color: #333333;" data-color="#333333"></div>
+                    <div class="color-box" style="background-color: #ff0000;" data-color="#ff0000"></div>
+                    <div class="color-box" style="background-color: #0000ff;" data-color="#0000ff"></div>
+                </div>
+                <input type="color" id="text-color-picker" value="#000000">
+            </div>
+        </div>
+
+        <button id="generate-btn">Generate Image</button>
+
+        <div id="output-card" class="output-card" style="display: none;">
+            <h2>Output Image Preview</h2>
+            <canvas id="image-canvas" style="display: none;"></canvas>
+            <img id="preview-image" src="" alt="Generated Image">
+            <a id="download-btn" class="button" href="" download="generated-image.png">Download Image</a>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript Code Starts Here
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            const numberInput = document.getElementById('number-input');
+            const bgColorPicker = document.getElementById('bg-color-picker');
+            const textColorPicker = document.getElementById('text-color-picker');
+            const generateBtn = document.getElementById('generate-btn');
+            const outputCard = document.getElementById('output-card');
+            const canvas = document.getElementById('image-canvas');
+            const previewImage = document.getElementById('preview-image');
+            const downloadBtn = document.getElementById('download-btn');
+            const bgGeneralColors = document.getElementById('bg-general-colors');
+            const textGeneralColors = document.getElementById('text-general-colors');
+
+            // Theme switcher
+            themeToggle.addEventListener('change', () => {
+                document.body.classList.toggle('dark-theme');
+            });
+
+            // General color selection for background
+            bgGeneralColors.addEventListener('click', (e) => {
+                if (e.target.classList.contains('color-box')) {
+                    bgColorPicker.value = e.target.dataset.color;
+                }
+            });
+
+            // General color selection for text
+            textGeneralColors.addEventListener('click', (e) => {
+                if (e.target.classList.contains('color-box')) {
+                    textColorPicker.value = e.target.dataset.color;
+                }
+            });
+
+            // Generate image button click event
+            generateBtn.addEventListener('click', () => {
+                const number = numberInput.value;
+                const bgColor = bgColorPicker.value;
+                const textColor = textColorPicker.value;
+
+                if (!number) {
+                    alert('Please enter a number.');
+                    return;
+                }
+
+                const ctx = canvas.getContext('2d');
+                const canvasSize = 300;
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+
+                // Set Background
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Set Text
+                ctx.fillStyle = textColor;
+                ctx.font = 'bold 100px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(number, canvas.width / 2, canvas.height / 2);
+
+                // Create image from canvas
+                const dataUrl = canvas.toDataURL('image/png');
+                previewImage.src = dataUrl;
+                downloadBtn.href = dataUrl;
+                
+                // Show the output card
+                outputCard.style.display = 'block';
+
+                // Scroll down to the output card smoothly
+                outputCard.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+
+</body>
+</html>
