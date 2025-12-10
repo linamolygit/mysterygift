@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Quiz Editor Pro</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Yantramanav:wght@900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Cropper.js -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Pickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2575fc;
+            --gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --bg: #f4f6f9;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin: 10px 0 15px; color: #333; font-size: 1.5rem; text-align: center; }
+
+        /* --- EDITOR WRAPPER --- */
+        .editor-scale-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            overflow: visible; 
+            margin-bottom: 20px;
+        }
+
+        /* --- CANVAS --- */
+        #meme-canvas {
+            width: 550px;
+            height: 650px; 
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0; 
+            transform-origin: top center;
+        }
+
+        /* --- HEADER --- */
+        .canvas-header {
+            background-color: #ff2a2a;
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 5px 25px;
+            border-bottom: 4px solid #000;
+            cursor: pointer;
+        }
+        .canvas-header h2 {
+            margin: 0;
+            font-family: 'Yantramanav', sans-serif;
+            font-weight: 900;
+            color: #ffff00;
+            font-size: 38px;
+            line-height: 1.1;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000;
+        }
+        .highlighted { color: #00ffff !important; }
+
+        /* --- BODY --- */
+        .canvas-body {
+            display: flex;
+            flex: 1;
+            padding: 15px; 
+            gap: 15px; 
+            background: #fff;
+            overflow: visible;
+        }
+
+        /* LEFT OPTIONS */
+        .options-col {
+            width: 215px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: 5px;
+            flex-shrink: 0; 
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px; 
+            position: relative;
+        }
+
+        .option-letter {
+            font-size: 45px;
+            font-weight: 700;
+            color: #222;
+            width: 35px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        /* WRAPPER FOR OVAL */
+        .oval-container-box {
+            position: relative;
+            width: 170px;
+            height: 100px;
+        }
+
+        /* OVAL INPUTS (USING BACKGROUND IMAGE) */
+        .option-img-wrapper {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px dashed #ccc;
+            background-color: #f0f2f5;
+            cursor: pointer;
+            transition: 0.2s;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        .option-img-wrapper:hover { border-color: var(--primary); background-color: #eef4ff; }
+        
+        .placeholder-icon { 
+            font-size: 24px; color: #aaa; pointer-events: none;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+
+        /* PENCIL ICON */
+        .edit-icon-btn {
+            position: absolute;
+            right: 0px; 
+            bottom: -5px; 
+            background: var(--gradient);
+            color: white;
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            display: none; 
+            align-items: center; justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 20;
+            border: 2px solid white;
+            transition: transform 0.2s;
+        }
+        .edit-icon-btn:active { transform: scale(0.9); }
+
+        /* RIGHT MAIN IMAGE (USING BACKGROUND IMAGE) */
+        .main-img-col {
+            width: 290px;
+            background-color: #f0f2f5;
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .main-img-col:hover { border-color: var(--primary); }
+
+        /* PENCIL FOR MAIN IMAGE */
+        .main-pencil-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--gradient);
+            color: white;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: none; 
+            align-items: center; justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 20;
+            border: 2px solid white;
+        }
+
+        /* --- PREVIEW SECTION --- */
+        .preview-wrapper {
+            width: 100%;
+            max-width: 550px;
+            margin-top: 20px;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+        
+        .preview-img-display {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .btn-gradient {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 8px 20px rgba(37, 117, 252, 0.25);
+            transition: transform 0.2s;
+        }
+        .btn-gradient:active { transform: scale(0.98); }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s; }
+        
+        .modal-box {
+            background: white; width: 100%; max-width: 500px;
+            border-radius: 20px; overflow: hidden;
+            display: flex; flex-direction: column;
+            max-height: 90vh;
+        }
+
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 1.2rem; }
+        .modal-content { padding: 20px; overflow-y: auto; }
+
+        /* CROPPER TOOLBAR */
+        .crop-container { height: 350px; background: #000; margin-bottom: 15px; border-radius: 10px; overflow: hidden; }
+        
+        .crop-toolbar {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center;
+        }
+        .tool-btn {
+            background: #f0f2f5; border: none; width: 45px; height: 45px; border-radius: 10px;
+            color: #444; font-size: 18px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tool-btn:hover { background: #e0e0e0; }
+        .tool-btn:active { background: var(--primary); color: white; }
+
+        /* TEXT EDITOR COLOR PICKERS */
+        .color-row {
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 10px;
+        }
+        .pickr-container { display: inline-block; }
+
+        /* SEARCH TAB */
+        .tab-group { display: flex; background: #f0f0f0; padding: 5px; border-radius: 12px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; border-radius: 10px; font-weight: 600; color: #666; cursor: pointer; }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .search-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
+        .grid-img { aspect-ratio: 1; background: #ddd; border-radius: 8px; cursor: pointer; overflow: hidden; }
+        .grid-img img { width: 100%; height: 100%; object-fit: cover; }
+        .search-input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 50px; font-family: inherit; outline: none; }
+
+        /* MOBILE SCALING */
+        @media (max-width: 600px) {
+            #meme-canvas {
+                transform: scale(0.62); 
+                margin-bottom: -230px; 
+                margin-top: -20px;
+            }
+            .canvas-header h2 { font-size: 42px; }
+            .preview-wrapper { width: 100%; padding: 0 15px; }
+        }
+
+        /* HIDE UI DURING CAPTURE */
+        .generating .edit-icon-btn, 
+        .generating .main-pencil-btn,
+        .generating .placeholder-icon,
+        .generating i.fa-plus {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pro Quiz Editor</h1>
+
+    <!-- EDITOR -->
+    <div class="editor-scale-wrapper">
+        <div id="meme-canvas">
+            <!-- UPDATED HEADER TEXT -->
+            <div class="canvas-header" onclick="openTextEditor()">
+                <h2 id="headerText">
+                    दम है तो बताओ <span class="highlighted">_______</span> का आंखें कौनसा है
+                </h2>
+            </div>
+            
+            <div class="canvas-body">
+                <!-- Left Options -->
+                <div class="options-col">
+                    <!-- A -->
+                    <div class="option-row">
+                        <div class="option-letter">A.</div>
+                        <div class="oval-container-box">
+                            <div class="option-img-wrapper" id="imgA-wrapper" onclick="handleOptionClick('imgA')">
+                                <i class="fas fa-plus placeholder-icon"></i>
+                            </div>
+                            <div class="edit-icon-btn" onclick="openCropper('imgA'); event.stopPropagation();">
+                                <i class="fas fa-pencil-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- B -->
+                    <div class="option-row">
+                        <div class="option-letter">B.</div>
+                        <div class="oval-container-box">
+                            <div class="option-img-wrapper" id="imgB-wrapper" onclick="handleOptionClick('imgB')">
+                                <i class="fas fa-plus placeholder-icon"></i>
+                            </div>
+                            <div class="edit-icon-btn" onclick="openCropper('imgB'); event.stopPropagation();">
+                                <i class="fas fa-pencil-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- C -->
+                    <div class="option-row">
+                        <div class="option-letter">C.</div>
+                        <div class="oval-container-box">
+                            <div class="option-img-wrapper" id="imgC-wrapper" onclick="handleOptionClick('imgC')">
+                                <i class="fas fa-plus placeholder-icon"></i>
+                            </div>
+                            <div class="edit-icon-btn" onclick="openCropper('imgC'); event.stopPropagation();">
+                                <i class="fas fa-pencil-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- D -->
+                    <div class="option-row">
+                        <div class="option-letter">D.</div>
+                        <div class="oval-container-box">
+                            <div class="option-img-wrapper" id="imgD-wrapper" onclick="handleOptionClick('imgD')">
+                                <i class="fas fa-plus placeholder-icon"></i>
+                            </div>
+                            <div class="edit-icon-btn" onclick="openCropper('imgD'); event.stopPropagation();">
+                                <i class="fas fa-pencil-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Main Image -->
+                <div class="main-img-col" id="mainPhoto-wrapper" onclick="handleOptionClick('mainPhoto')">
+                    <i class="fas fa-plus placeholder-icon" style="font-size:40px;"></i>
+                    <div class="main-pencil-btn" onclick="openCropper('mainPhoto'); event.stopPropagation();">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREVIEW & DOWNLOAD -->
+    <div class="preview-wrapper">
+        <h3 style="font-size:1rem; color:#666; margin-bottom:10px;">Final Output Preview</h3>
+        <img id="previewImage" class="preview-img-display" src="" alt="Preview">
+        <button class="btn-gradient" id="downloadBtn">
+            <i class="fas fa-download"></i> Download Image
+        </button>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Select Image</h3>
+                <i class="fas fa-times" style="font-size:1.5rem; cursor:pointer;" onclick="closeModal('uploadModal')"></i>
+            </div>
+            <div class="modal-content">
+                <div class="tab-group">
+                    <button class="tab-btn active" onclick="switchTab('device')">Device</button>
+                    <button class="tab-btn" onclick="switchTab('search')">Web Search</button>
+                </div>
+                <div id="tab-device" style="display:block;">
+                    <div style="border:2px dashed #ddd; padding:40px; text-align:center; border-radius:15px; cursor:pointer;" 
+                         onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:40px; color:var(--primary); margin-bottom:10px;"></i>
+                        <p style="margin:0; color:#666;">Tap to Upload</p>
+                    </div>
+                </div>
+                <div id="tab-search" style="display:none;">
+                    <div style="position:relative;">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search actor/actress...">
+                        <button onclick="performSearch()" style="position:absolute; right:10px; top:10px; background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:20px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="search-grid" id="searchResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+
+    <!-- CROP MODAL -->
+    <div class="modal-overlay" id="cropModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Edit Image</h3>
+                <i class="fas fa-times" style="font-size:1.5rem; cursor:pointer;" onclick="closeModal('cropModal')"></i>
+            </div>
+            <div class="modal-content">
+                <div class="crop-container">
+                    <img id="image-to-crop" src="" style="max-width:100%;">
+                </div>
+                
+                <div class="crop-toolbar">
+                    <button class="tool-btn" onclick="cropper.zoom(0.1)"><i class="fas fa-search-plus"></i></button>
+                    <button class="tool-btn" onclick="cropper.zoom(-0.1)"><i class="fas fa-search-minus"></i></button>
+                    <button class="tool-btn" onclick="cropper.rotate(90)"><i class="fas fa-redo"></i></button>
+                    <button class="tool-btn" onclick="cropper.reset()"><i class="fas fa-sync"></i></button>
+                </div>
+                <div class="crop-toolbar">
+                    <button class="tool-btn" style="width:auto; padding:0 15px; font-size:14px;" onclick="setRatio(NaN)">Free</button>
+                    <button class="tool-btn" style="width:auto; padding:0 15px; font-size:14px;" onclick="setRatio(1)">1:1</button>
+                    <button class="tool-btn" style="width:auto; padding:0 15px; font-size:14px;" onclick="setRatio(4/3)">4:3</button>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-gradient" style="background:#888; width:40%;" onclick="closeModal('cropModal')">Cancel</button>
+                    <button class="btn-gradient" onclick="applyCrop()">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEXT EDITOR -->
+    <div class="modal-overlay" id="textModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Header Settings</h3>
+                <i class="fas fa-times" style="font-size:1.5rem; cursor:pointer;" onclick="closeModal('textModal')"></i>
+            </div>
+            <div class="modal-content">
+                <textarea id="textEditorInput" style="width:100%; height:80px; padding:15px; border:2px solid #ddd; border-radius:15px; margin-bottom:15px; font-family:inherit; font-size:1rem;"></textarea>
+                
+                <div class="color-row">
+                    <span style="font-weight:600; color:#555;">Background</span>
+                    <div class="pickr-container" id="bg-picker"></div>
+                </div>
+                
+                <div class="color-row">
+                    <span style="font-weight:600; color:#555;">Main Text</span>
+                    <div class="pickr-container" id="text-picker"></div>
+                </div>
+
+                <div class="color-row">
+                    <span style="font-weight:600; color:#555;">Highlight</span>
+                    <div class="pickr-container" id="highlight-picker"></div>
+                </div>
+
+                <button class="btn-gradient" style="margin-top:10px;" onclick="addHighlight()">
+                    Highlight Selected [[ ]]
+                </button>
+                <button class="btn-gradient" style="margin-top:10px; background:#444;" onclick="saveText()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeImgId = null;
+        let cropper = null;
+        let originalImages = {};
+        
+        // --- PICKR SETUP ---
+        const pickrConfig = {
+            theme: 'classic',
+            components: {
+                preview: true, opacity: true, hue: true,
+                interaction: { hex: true, input: true, save: true }
+            }
+        };
+        const bgPickr = Pickr.create({ el: '#bg-picker', default: '#ff2a2a', ...pickrConfig });
+        const textPickr = Pickr.create({ el: '#text-picker', default: '#ffff00', ...pickrConfig });
+        const highlightPickr = Pickr.create({ el: '#highlight-picker', default: '#00ffff', ...pickrConfig });
+
+        // --- UPLOAD FLOW ---
+        function handleOptionClick(id) {
+            if (event.target.closest('.edit-icon-btn') || event.target.closest('.main-pencil-btn')) return;
+            activeImgId = id;
+            document.getElementById('uploadModal').classList.add('active');
+            switchTab('device');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if(id === 'cropModal' && cropper) { cropper.destroy(); cropper = null; }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (evt) => setImageAndClose(evt.target.result);
+                reader.readAsDataURL(e.target.files[0]);
+            }
+            this.value = '';
+        });
+
+        function setImageAndClose(src) {
+            let wrapperId;
+            if (activeImgId === 'mainPhoto') wrapperId = 'mainPhoto-wrapper';
+            else wrapperId = activeImgId + '-wrapper';
+            
+            const wrapper = document.getElementById(wrapperId);
+            wrapper.style.backgroundImage = `url(${src})`;
+            
+            if(activeImgId === 'mainPhoto') {
+                wrapper.querySelector('.main-pencil-btn').style.display = 'flex';
+                wrapper.querySelector('.placeholder-icon').style.display = 'none';
+            } else {
+                const container = wrapper.parentElement; 
+                if(container.querySelector('.edit-icon-btn')) container.querySelector('.edit-icon-btn').style.display = 'flex';
+                wrapper.querySelector('.placeholder-icon').style.display = 'none';
+            }
+
+            originalImages[activeImgId] = src;
+            closeModal('uploadModal');
+            setTimeout(generatePreview, 300);
+        }
+
+        // --- SEARCH ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-device').style.display = (tab === 'device') ? 'block' : 'none';
+            document.getElementById('tab-search').style.display = (tab === 'search') ? 'block' : 'none';
+            if(tab === 'search') { event.target.classList.add('active'); document.getElementById('searchInput').focus(); }
+            else { document.querySelector('.tab-btn').classList.add('active'); }
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value;
+            const grid = document.getElementById('searchResults');
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
+            
+            setTimeout(() => {
+                grid.innerHTML = '';
+                for(let i=0; i<6; i++) {
+                    const seed = Math.floor(Math.random()*9999);
+                    const url = `https://image.pollinations.ai/prompt/${query}%20face%20closeup?width=400&height=400&nologo=true&seed=${seed}`;
+                    const div = document.createElement('div');
+                    div.className = 'grid-img';
+                    div.innerHTML = `<img src="${url}" crossorigin="anonymous">`;
+                    div.onclick = () => { toBase64(url, (base64) => setImageAndClose(base64)); };
+                    grid.appendChild(div);
+                }
+            }, 800);
+        }
+
+        function toBase64(url, callback) {
+            const img = new Image(); img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                const c = document.createElement('canvas'); c.width=img.width; c.height=img.height;
+                c.getContext('2d').drawImage(img,0,0); callback(c.toDataURL());
+            }; img.src=url;
+        }
+
+        // --- CROPPER ---
+        function openCropper(id) {
+            activeImgId = id;
+            let currentBg = "";
+            let wrapperId = (id === 'mainPhoto') ? 'mainPhoto-wrapper' : id + '-wrapper';
+            const style = document.getElementById(wrapperId).style.backgroundImage;
+            
+            if (style && style !== 'none') {
+                currentBg = style.slice(5, -2);
+            } else {
+                currentBg = originalImages[id];
+            }
+            if(originalImages[id]) currentBg = originalImages[id];
+            
+            if(!currentBg) return;
+
+            document.getElementById('image-to-crop').src = currentBg;
+            document.getElementById('cropModal').classList.add('active');
+            
+            setTimeout(() => {
+                if(cropper) cropper.destroy();
+                cropper = new Cropper(document.getElementById('image-to-crop'), {
+                    viewMode: 1, 
+                    autoCropArea: 1, 
+                    aspectRatio: NaN,
+                    dragMode: 'move'
+                });
+            }, 200);
+        }
+
+        function setRatio(ratio) { if(cropper) cropper.setAspectRatio(ratio); }
+
+        function applyCrop() {
+            if(!cropper) return;
+            const canvas = cropper.getCroppedCanvas({ width: 800 });
+            const croppedData = canvas.toDataURL();
+            
+            let wrapperId = (activeImgId === 'mainPhoto') ? 'mainPhoto-wrapper' : activeImgId + '-wrapper';
+            document.getElementById(wrapperId).style.backgroundImage = `url(${croppedData})`;
+            
+            closeModal('cropModal');
+            setTimeout(generatePreview, 300);
+        }
+
+        // --- UPDATED TEXT EDITOR LOGIC (FIXED) ---
+        function openTextEditor() {
+            const header = document.getElementById('headerText');
+            const textarea = document.getElementById('textEditorInput');
+            
+            // Get text from header
+            let val = header.innerText;
+            const dash = "_______";
+            
+            document.getElementById('textModal').classList.add('active');
+
+            // Logic to remove dash and set cursor
+            if(val.includes(dash)) {
+                // Remove the dashes
+                const newVal = val.replace(dash, "");
+                textarea.value = newVal;
+
+                // Find index where dashes were
+                const pos = val.indexOf(dash);
+
+                // Set focus and cursor position with delay
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(pos, pos);
+                }, 100);
+            } else {
+                // If user already edited, just show text normally
+                textarea.value = val;
+            }
+        }
+
+        function addHighlight() {
+            const ta = document.getElementById('textEditorInput');
+            const v = ta.value;
+            if(ta.selectionStart === ta.selectionEnd) return alert('Select text first');
+            ta.value = v.slice(0, ta.selectionStart) + `[[${v.slice(ta.selectionStart, ta.selectionEnd)}]]` + v.slice(ta.selectionEnd);
+        }
+
+        function saveText() {
+            let txt = document.getElementById('textEditorInput').value;
+            const hlColor = highlightPickr.getColor().toHEXA().toString();
+            txt = txt.replace(/\[\[/g, `<span class="highlighted" style="color:${hlColor} !important;">`).replace(/\]\]/g, '</span>');
+            const headerTitle = document.getElementById('headerText');
+            headerTitle.innerHTML = txt;
+            headerTitle.style.color = textPickr.getColor().toHEXA().toString();
+            document.querySelector('.canvas-header').style.backgroundColor = bgPickr.getColor().toHEXA().toString();
+            closeModal('textModal');
+            setTimeout(generatePreview, 300);
+        }
+
+        // --- PREVIEW & DOWNLOAD ---
+        function generatePreview() {
+            const canvasEl = document.getElementById('meme-canvas');
+            canvasEl.classList.add('generating');
+            
+            html2canvas(canvasEl, {
+                useCORS: true, 
+                scale: 1, 
+                width: 550, 
+                height: 650, 
+                windowWidth: 1200 
+            }).then(canvas => {
+                document.getElementById('previewImage').src = canvas.toDataURL();
+                canvasEl.classList.remove('generating');
+            });
+        }
+        window.onload = generatePreview;
+
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const canvasEl = document.getElementById('meme-canvas');
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            canvasEl.classList.add('generating');
+
+            html2canvas(canvasEl, {
+                useCORS: true, scale: 2, width: 550, height: 650, windowWidth: 1200
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'quiz-meme.jpg'; 
+                link.href = canvas.toDataURL('image/jpeg', 0.95); 
+                link.click();
+                canvasEl.classList.remove('generating');
+                btn.innerHTML = originalText;
+            });
+        });
+
+    </script>
+</body>
+</html>
