@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HD Video Quiz Editor</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Yantramanav:wght@900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2575fc;
+            --gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --success: #28a745;
+            --danger: #ff2a2a;
+            --bg: #f4f6f9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin: 0 0 20px; color: #333; }
+
+        /* --- WRAPPER --- */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- CANVAS --- */
+        .canvas-wrapper {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            width: 550px;
+            height: 650px;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        #html-header-source {
+            position: absolute; top: 0; left: 0; width: 550px; min-height: 110px;
+            background-color: #ff2a2a; display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 10px 25px; border-bottom: 4px solid #000;
+            z-index: 10; cursor: pointer;
+        }
+        #html-header-source h2 {
+            margin: 0; font-family: 'Yantramanav', sans-serif; font-weight: 900;
+            color: #ffff00; font-size: 38px; line-height: 1.1;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000;
+        }
+        .highlighted { color: #00ffff !important; }
+
+        #render-canvas { 
+            width: 550px; 
+            height: 650px; 
+            display: block; 
+        }
+
+        /* --- CONTROLS --- */
+        .controls-panel {
+            background: white; padding: 20px; border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); width: 100%; max-width: 600px;
+        }
+        
+        .control-group label { font-size: 0.85rem; font-weight: 600; color: #666; display: block; margin-bottom: 5px; }
+        .input-box { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-family: inherit; }
+        .input-box:focus { border-color: var(--primary); outline: none; }
+
+        .btn {
+            background: var(--gradient); color: white; border: none; padding: 12px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 1rem; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn.secondary { background: #444; }
+        .btn.danger { background: var(--danger); } 
+        .btn.success { background: var(--success); }
+
+        .options-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .opt-input-group { text-align: center; }
+        .opt-input-group span { font-weight: 900; color: #333; display: block; margin-bottom: 3px; }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-box { 
+            background: white; width: 90%; max-width: 500px; border-radius: 20px; padding: 20px; 
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: #eee; color: #333; border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-size: 1.2rem; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: 0.2s; z-index: 10;
+        }
+        .close-btn:hover { background: #ddd; color: #000; }
+
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        
+        .upload-card {
+            border: 2px dashed #ccc; border-radius: 10px; 
+            height: 160px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; cursor: pointer; transition: 0.2s;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            position: relative; overflow: hidden;
+        }
+        .upload-card:hover { border-color: var(--primary); background-color: #f9f9f9; transform: translateY(-2px); }
+        .upload-card i, .upload-card p { pointer-events: none; z-index: 2; }
+        .upload-card p { margin: 0; font-size: 0.9rem; font-weight: 600; color: #555; margin-top: 10px; }
+        .upload-card.has-image i, .upload-card.has-image p { display: none; }
+
+        .color-row { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+
+        @media (max-width: 600px) {
+            .canvas-wrapper { transform: scale(0.65); margin: -100px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>HD Video Quiz Editor</h1>
+
+    <div class="editor-container">
+        <!-- CANVAS -->
+        <div class="canvas-wrapper">
+            <div id="html-header-source" onclick="openTextEditor()">
+                <!-- UPDATED HEADING: Removed dash, added 'kitna' -->
+                <h2 id="headerText">दम है तो बताओ <span class="highlighted">कितना</span> नंबर लिखा है</h2>
+            </div>
+            <canvas id="render-canvas"></canvas>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls-panel">
+            
+            <div class="control-group" style="margin-bottom: 20px;">
+                <button class="btn" onclick="openUploadModal()">
+                    <i class="fas fa-images"></i> Upload Images
+                </button>
+            </div>
+
+            <div class="control-group">
+                <label>Edit</label>
+                <div class="options-inputs">
+                    <div class="opt-input-group">
+                        <span>A</span>
+                        <input type="number" id="optA" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>B</span>
+                        <input type="number" id="optB" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>C</span>
+                        <input type="number" id="optC" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>D</span>
+                        <input type="number" id="optD" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="anim-btn" class="btn danger" onclick="toggleAnimation()">
+                    <i class="fas fa-play"></i> Start Animation
+                </button>
+                <button id="download-btn" class="btn success" style="display: none;" onclick="downloadVideo()">
+                    <i class="fas fa-download"></i> Download Video
+                </button>
+            </div>
+            
+            <div id="status-msg" style="text-align:center; color:#666; font-size:0.9rem; margin-top:10px; min-height:20px;"></div>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-box">
+            <button class="close-btn" onclick="document.getElementById('uploadModal').classList.remove('active')">&times;</button>
+            <h3 style="margin-top:0;">Select Images</h3>
+            <div class="upload-grid">
+                <div class="upload-card" id="card-img1" onclick="document.getElementById('file-img1').click()">
+                    <i class="fas fa-image" style="font-size: 45px; color: var(--primary);"></i>
+                    <p>Normal Image</p>
+                    <input type="file" id="file-img1" hidden accept="image/*" onchange="handleFile(this, 1)">
+                </div>
+                <div class="upload-card" id="card-img2" onclick="document.getElementById('file-img2').click()">
+                    <i class="fas fa-magic" style="font-size: 45px; color: #9c27b0;"></i>
+                    <p>Revealed Image</p>
+                    <input type="file" id="file-img2" hidden accept="image/*" onchange="handleFile(this, 2)">
+                </div>
+            </div>
+            <button class="btn" style="margin-top:20px;" onclick="document.getElementById('uploadModal').classList.remove('active')">Done</button>
+        </div>
+    </div>
+
+    <!-- TEXT EDITOR MODAL -->
+    <div class="modal-overlay" id="textModal">
+        <div class="modal-box">
+            <button class="close-btn" onclick="document.getElementById('textModal').classList.remove('active')">&times;</button>
+            <h3 style="margin-top:0;">Edit Header</h3>
+            <textarea id="textEditorInput" class="input-box" style="height:80px; margin-bottom:15px;"></textarea>
+            
+            <div class="color-row"><span>Background</span> <div id="bg-picker"></div></div>
+            <div class="color-row"><span>Main Text</span> <div id="text-picker"></div></div>
+            <div class="color-row"><span>Highlight</span> <div id="highlight-picker"></div></div>
+
+            <button class="btn" onclick="addHighlight()">Highlight [[ ]]</button>
+            <button class="btn secondary" style="margin-top:10px;" onclick="saveText()">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const canvas = document.getElementById('render-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // HIGH DPI SETUP
+        const dpr = window.devicePixelRatio || 1;
+        const LOGICAL_WIDTH = 550;
+        const LOGICAL_HEIGHT = 650;
+        
+        canvas.width = LOGICAL_WIDTH * dpr;
+        canvas.height = LOGICAL_HEIGHT * dpr;
+        canvas.style.width = LOGICAL_WIDTH + 'px';
+        canvas.style.height = LOGICAL_HEIGHT + 'px';
+        ctx.scale(dpr, dpr);
+
+        // --- SETTINGS ---
+        const HEADER_H = 110;
+        const BOTTOM_H = 80; 
+        const MIDDLE_H = 650 - HEADER_H - BOTTOM_H; 
+        
+        const SLIDER_ZONE_W = 100; 
+        const BAR_WIDTH = 20; 
+        const PILL_WIDTH = 45; 
+        const PILL_HEIGHT = 80; 
+        const CYCLE_TIME_ONE_WAY = 1.5;
+        const LEFT_OFFSET = 15; 
+
+        // --- STATE ---
+        let isAnimating = false;
+        let lastTime = 0;
+        let pillY = 0; 
+        let pillDir = -1; 
+        
+        let hasBouncedTop = false; 
+        let completedCycles = 0;
+
+        let img1 = new Image();
+        let img2 = new Image();
+        let headerImg = null;
+        let currentDisplayImg = img1;
+        let swapTimer = 0;
+        let lastCrossDir = 0;
+        let videoBlobURL = null;
+
+        img1.src = 'https://via.placeholder.com/400x400/eee/999?text=Image+1';
+        img2.src = 'https://via.placeholder.com/400x400/ddd/555?text=Image+2';
+        img1.onload = () => requestDraw();
+
+        // --- TEXT & PICKR ---
+        const pickrConfig = { theme: 'classic', components: { preview: true, opacity: true, hue: true, interaction: { hex: true, input: true, save: true } } };
+        const bgPickr = Pickr.create({ el: '#bg-picker', default: '#ff2a2a', ...pickrConfig });
+        const textPickr = Pickr.create({ el: '#text-picker', default: '#ffff00', ...pickrConfig });
+        const highlightPickr = Pickr.create({ el: '#highlight-picker', default: '#00ffff', ...pickrConfig });
+
+        function openTextEditor() {
+            // Get HTML content
+            const headerEl = document.getElementById('headerText');
+            let htmlContent = headerEl.innerHTML;
+            
+            // Convert <span class="highlighted">Text</span> back to [[Text]] for editing
+            let formattedText = htmlContent.replace(/<span class="highlighted"[^>]*>(.*?)<\/span>/g, "[[$1]]");
+            
+            // Clean up other potential tags if any (basic stripping)
+            // But we keep the text structure.
+            
+            document.getElementById('textEditorInput').value = formattedText;
+            document.getElementById('textModal').classList.add('active');
+        }
+
+        function addHighlight() {
+            const ta = document.getElementById('textEditorInput');
+            const v = ta.value;
+            if(ta.selectionStart === ta.selectionEnd) return;
+            ta.value = v.slice(0, ta.selectionStart) + `[[${v.slice(ta.selectionStart, ta.selectionEnd)}]]` + v.slice(ta.selectionEnd);
+        }
+
+        function saveText() {
+            let txt = document.getElementById('textEditorInput').value;
+            const hlColor = highlightPickr.getColor().toHEXA().toString();
+            txt = txt.replace(/\[\[/g, `<span class="highlighted" style="color:${hlColor} !important;">`).replace(/\]\]/g, '</span>');
+            const headerEl = document.getElementById('headerText');
+            headerEl.innerHTML = txt;
+            headerEl.style.color = textPickr.getColor().toHEXA().toString();
+            document.getElementById('html-header-source').style.backgroundColor = bgPickr.getColor().toHEXA().toString();
+            document.getElementById('textModal').classList.remove('active');
+            captureHeader();
+        }
+
+        function captureHeader() {
+            html2canvas(document.getElementById('html-header-source'), { scale: dpr * 1.5, backgroundColor: null }).then(c => {
+                headerImg = c;
+                requestDraw();
+            });
+        }
+        setTimeout(captureHeader, 500);
+
+        // --- UPLOAD & PREVIEW ---
+        function openUploadModal() { document.getElementById('uploadModal').classList.add('active'); }
+        
+        function handleFile(input, n) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const src = e.target.result;
+                    if(n===1) img1.src = src;
+                    else img2.src = src;
+
+                    const cardId = n === 1 ? 'card-img1' : 'card-img2';
+                    const card = document.getElementById(cardId);
+                    card.style.backgroundImage = `url(${src})`;
+                    card.classList.add('has-image');
+                    card.innerHTML = ''; 
+
+                    setTimeout(requestDraw, 100);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- ANIMATION ---
+        let mediaRecorder, chunks = [];
+
+        function toggleAnimation() {
+            const btn = document.getElementById('anim-btn');
+            const dlBtn = document.getElementById('download-btn');
+            const status = document.getElementById('status-msg');
+
+            if (!isAnimating) {
+                isAnimating = true;
+                btn.innerHTML = '<i class="fas fa-stop"></i> Stop Animation';
+                btn.classList.remove('danger');
+                btn.classList.add('secondary'); 
+                dlBtn.style.display = 'none';
+                status.innerText = "Recording... (Auto-stop after 2 cycles)";
+                
+                lastTime = performance.now();
+                pillY = MIDDLE_H - PILL_HEIGHT;
+                pillDir = -1;
+                hasBouncedTop = false; 
+                completedCycles = 0; 
+                
+                startAutoRecording();
+                requestAnimationFrame(loop);
+            } else {
+                stopAnimationLogic();
+            }
+        }
+
+        function stopAnimationLogic() {
+            const btn = document.getElementById('anim-btn');
+            isAnimating = false;
+            
+            btn.innerHTML = '<i class="fas fa-play"></i> Start Animation';
+            btn.classList.remove('secondary');
+            btn.classList.add('danger');
+            
+            stopAutoRecording();
+            
+            currentDisplayImg = img1;
+            pillY = MIDDLE_H - PILL_HEIGHT;
+            draw(0);
+        }
+
+        function startAutoRecording() {
+            const stream = canvas.captureStream(30);
+            const options = { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 5000000 };
+            try { mediaRecorder = new MediaRecorder(stream, options); } 
+            catch (e) { mediaRecorder = new MediaRecorder(stream); }
+
+            chunks = [];
+            mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, {type:'video/webm'});
+                videoBlobURL = URL.createObjectURL(blob);
+                document.getElementById('download-btn').style.display = 'flex';
+                document.getElementById('status-msg').innerHTML = "<span style='color:green'>Recording Complete!</span>";
+            };
+            mediaRecorder.start();
+        }
+
+        function stopAutoRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function downloadVideo() {
+            if (!videoBlobURL) return;
+            const a = document.createElement('a');
+            a.href = videoBlobURL;
+            a.download = `HD-quiz-video-${Date.now()}.webm`;
+            a.click();
+        }
+
+        function loop(t) {
+            if (!isAnimating) return;
+            const dt = (t - lastTime) / 1000;
+            lastTime = t;
+            updatePhysics(dt);
+            draw(dt);
+            requestAnimationFrame(loop);
+        }
+
+        function updatePhysics(dt) {
+            const travelDist = MIDDLE_H - PILL_HEIGHT;
+            const speed = travelDist / CYCLE_TIME_ONE_WAY;
+
+            pillY += pillDir * speed * dt;
+
+            // --- 2-CYCLE LOGIC ---
+            if (pillY <= 0) { 
+                pillY = 0; 
+                pillDir = 1; 
+                hasBouncedTop = true; 
+            }
+            if (pillY >= travelDist) { 
+                pillY = travelDist; 
+                pillDir = -1; 
+                
+                if (hasBouncedTop) {
+                    completedCycles++;
+                    hasBouncedTop = false; 
+                    if (completedCycles >= 2) {
+                        stopAnimationLogic(); 
+                        return;
+                    }
+                }
+            }
+
+            // Swap Logic
+            const pillCenter = pillY + PILL_HEIGHT/2;
+            const barCenter = MIDDLE_H / 2;
+            
+            if (Math.abs(pillCenter - barCenter) < (PILL_HEIGHT/2 + 5)) {
+                if (lastCrossDir !== pillDir) {
+                    currentDisplayImg = img2;
+                    swapTimer = 0.5;
+                    lastCrossDir = pillDir;
+                }
+            } else if (Math.abs(pillCenter - barCenter) > 20) {
+                lastCrossDir = 0;
+            }
+
+            if (swapTimer > 0) {
+                swapTimer -= dt;
+                if (swapTimer <= 0) currentDisplayImg = img1;
+            }
+        }
+
+        function requestDraw() { if(!isAnimating) draw(0); }
+
+        function draw(dt) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+            if (headerImg) ctx.drawImage(headerImg, 0, 0, 550, HEADER_H);
+            else { ctx.fillStyle = '#ff2a2a'; ctx.fillRect(0,0,550,HEADER_H); }
+
+            const midY = HEADER_H;
+            ctx.fillStyle = '#f9f9f9'; 
+            ctx.fillRect(0, midY, SLIDER_ZONE_W, MIDDLE_H);
+            
+            const zoneCenterX = SLIDER_ZONE_W / 2;
+            const barCenterX = zoneCenterX + LEFT_OFFSET;
+            const barX = barCenterX - (BAR_WIDTH / 2);
+
+            roundRect(ctx, barX, midY + 10, BAR_WIDTH, MIDDLE_H - 20, 10, '#000'); 
+
+            const dotY = midY + (MIDDLE_H/2);
+            const dotRadius = PILL_WIDTH / 2; 
+            ctx.beginPath(); 
+            ctx.arc(barCenterX, dotY, dotRadius, 0, Math.PI*2);
+            ctx.fillStyle = 'red'; ctx.fill(); 
+            ctx.strokeStyle='white'; ctx.lineWidth = 2; ctx.stroke();
+
+            const pillDrawY = midY + pillY;
+            const pillX = barCenterX - (PILL_WIDTH / 2);
+            const grad = ctx.createLinearGradient(0, pillDrawY, 0, pillDrawY + PILL_HEIGHT);
+            grad.addColorStop(0, '#6a11cb'); grad.addColorStop(1, '#2575fc');
+            roundRect(ctx, pillX, pillDrawY, PILL_WIDTH, PILL_HEIGHT, 22, grad);
+
+            const imgX = SLIDER_ZONE_W;
+            const imgW = 550 - SLIDER_ZONE_W;
+            
+            if (currentDisplayImg && currentDisplayImg.complete) {
+                const iRatio = currentDisplayImg.width / currentDisplayImg.height;
+                const cRatio = imgW / MIDDLE_H;
+                let sW, sH, sx, sy;
+                if (iRatio > cRatio) {
+                    sH = currentDisplayImg.height; sW = sH * cRatio;
+                    sy = 0; sx = (currentDisplayImg.width - sW)/2;
+                } else {
+                    sW = currentDisplayImg.width; sH = sW / cRatio;
+                    sx = 0; sy = (currentDisplayImg.height - sH)/2;
+                }
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(currentDisplayImg, sx, sy, sW, sH, imgX, midY, imgW, MIDDLE_H);
+            } else {
+                ctx.fillStyle = '#eee'; ctx.fillRect(imgX, midY, imgW, MIDDLE_H);
+            }
+
+            const botY = HEADER_H + MIDDLE_H;
+            ctx.fillStyle = '#ddd'; ctx.fillRect(0, botY, 550, 2);
+
+            const labels = ['A', 'B', 'C', 'D'];
+            const inputs = ['optA', 'optB', 'optC', 'optD'];
+            const sectionW = 550 / 4;
+
+            ctx.font = 'bold 20px Poppins';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < 4; i++) {
+                const x = i * sectionW;
+                const cx = x + sectionW / 2;
+                const cy = botY + BOTTOM_H / 2;
+                
+                ctx.fillStyle = '#f0f2f5';
+                roundRect(ctx, x + 5, botY + 10, sectionW - 10, BOTTOM_H - 20, 10, '#f0f2f5');
+                ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.stroke();
+                
+                const val = document.getElementById(inputs[i]).value || '...';
+                ctx.fillStyle = '#ff2a2a'; ctx.fillText(labels[i] + ".", cx - 20, cy);
+                ctx.fillStyle = '#333'; ctx.fillText(val, cx + 15, cy);
+            }
+        }
+
+        function roundRect(ctx, x, y, w, h, r, fill) {
+            ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r);
+            ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+            if(fill) { ctx.fillStyle = fill; ctx.fill(); }
+        }
+
+        requestDraw();
+    </script>
+</body>
+</html>
