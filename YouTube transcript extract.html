@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript & Preview Tool</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --bg-color: #000000;         /* Black Background */
+            --card-bg: #1a1a1a;          /* Dark Grey Card */
+            --text-main: #ffffff;        /* White Text */
+            --text-muted: #b3b3b3;
+            --primary: #ff4500;          /* Orange Red (Highlights/Main Button) */
+            --secondary: #007bff;        /* Blue (Copy Button) */
+            --glow-primary: 0 0 20px rgba(255, 69, 0, 0.5);
+            --glow-secondary: 0 0 20px rgba(0, 123, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        header h1 span {
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 69, 0, 0.4);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* SEARCH SECTION */
+        .input-group {
+            position: relative;
+            display: flex;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 8px;
+            border-radius: 50px; /* Modern Pill Shape */
+            border: 1px solid #333;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .input-group input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            padding: 12px 20px;
+            font-size: 1rem;
+        }
+
+        .btn-glow {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--glow-primary);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.8);
+        }
+
+        /* LOADER */
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            margin: 30px auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RESULT SECTION */
+        .result-area {
+            display: none; /* JS will toggle this */
+            flex-direction: column;
+            gap: 25px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* VIDEO PREVIEW CARD */
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-title {
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            border-top: 1px solid #333;
+        }
+
+        /* TRANSCRIPT CARD */
+        .transcript-card {
+            padding: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .card-header h3 {
+            color: var(--primary);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .translate-trigger {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .translate-trigger:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .transcript-content {
+            height: 250px;
+            overflow-y: auto;
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 10px;
+            color: #ddd;
+            line-height: 1.6;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.95rem;
+            border: 1px solid #333;
+        }
+
+        /* Scrollbar Styling */
+        .transcript-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .transcript-content::-webkit-scrollbar-track {
+            background: #0f0f0f;
+        }
+        .transcript-content::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        /* FOOTER COPY BUTTON */
+        .card-footer {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-copy {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--glow-secondary);
+            transition: 0.3s;
+        }
+
+        .btn-copy:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 123, 255, 0.8);
+        }
+
+        /* MODAL (POPUP) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-box {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #444;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .close-modal:hover { color: white; }
+
+        .lang-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .lang-btn {
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .lang-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; border-radius: 15px; }
+            .btn-glow { width: 100%; border-radius: 10px; }
+            header h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1><span>YouTube</span> Transcript Tool</h1>
+            <p>Extract, Translate & Copy Transcripts from Video & Shorts</p>
+        </header>
+
+        <!-- Input Section -->
+        <div class="input-group">
+            <input type="text" id="videoUrlInput" placeholder="Paste YouTube Video or Short Link here...">
+            <button class="btn-glow" id="generateBtn">
+                Extract Transcript
+            </button>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader"></div>
+
+        <!-- Result Area -->
+        <div class="result-area" id="resultArea">
+            
+            <!-- Video Preview -->
+            <div class="card video-card">
+                <div class="video-wrapper">
+                    <iframe id="videoIframe" src="" allowfullscreen></iframe>
+                </div>
+                <div class="video-title" id="videoTitleDisplay">Fetching Video Title...</div>
+            </div>
+
+            <!-- Transcript Section -->
+            <div class="card transcript-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-file-alt"></i> Transcript</h3>
+                    <button class="translate-trigger" onclick="openModal()">
+                        <i class="fas fa-language"></i> Translate
+                    </button>
+                </div>
+
+                <div class="transcript-content" id="transcriptText">
+                    <!-- Text will be injected here via JS -->
+                </div>
+
+                <div class="card-footer">
+                    <button class="btn-copy" id="copyBtn">
+                        <i class="fas fa-copy"></i> Copy All Text
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Translate Popup Modal -->
+    <div class="modal-overlay" id="translateModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Select Language</h2>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="lang-grid">
+                <button class="lang-btn" onclick="translateTo('English')">English</button>
+                <button class="lang-btn" onclick="translateTo('Hindi')">Hindi</button>
+                <button class="lang-btn" onclick="translateTo('Spanish')">Spanish</button>
+                <button class="lang-btn" onclick="translateTo('French')">French</button>
+                <button class="lang-btn" onclick="translateTo('German')">German</button>
+                <button class="lang-btn" onclick="translateTo('Russian')">Russian</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // DOM Elements
+        const generateBtn = document.getElementById('generateBtn');
+        const urlInput = document.getElementById('videoUrlInput');
+        const loader = document.getElementById('loader');
+        const resultArea = document.getElementById('resultArea');
+        const videoIframe = document.getElementById('videoIframe');
+        const transcriptText = document.getElementById('transcriptText');
+        const copyBtn = document.getElementById('copyBtn');
+        const modal = document.getElementById('translateModal');
+        const videoTitleDisplay = document.getElementById('videoTitleDisplay');
+
+        // MOCK TRANSCRIPT DATA (Since we can't fetch real transcript without Backend API)
+        const dummyData = `[00:00] Hello guys, welcome back to another video.
+[00:05] Today we are creating a beautiful YouTube Transcript Extractor.
+[00:10] We are using HTML, CSS and pure JavaScript for this project.
+[00:15] Look at this beautiful dark UI with glowing buttons.
+[00:20] If you paste a link, this text appears as a simulation.
+[00:25] Normally, you would need a Python backend to get real text.
+[00:30] But for this UI demo, we are showing how it works perfectly.
+[00:35] Don't forget to like and subscribe for more coding content.
+[00:40] You can translate this text using the button above.
+[00:45] Or copy it directly using the blue button below.
+[00:50] Thanks for watching!`;
+
+        // 1. Helper: Extract Video ID
+        function getYouTubeID(url) {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        // 2. Event: Generate Button Click
+        generateBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            const videoId = getYouTubeID(url);
+
+            if (!videoId) {
+                alert('Please enter a valid YouTube Video or Shorts URL!');
+                return;
+            }
+
+            // UI Loading State
+            resultArea.style.display = 'none';
+            loader.style.display = 'block';
+
+            // Simulate Network Request (1.5 seconds)
+            setTimeout(() => {
+                loader.style.display = 'none';
+                resultArea.style.display = 'flex';
+
+                // Set Video Source
+                videoIframe.src = `https://www.youtube.com/embed/${videoId}`;
+                videoTitleDisplay.textContent = "How to Build a Website - Full Tutorial (Simulated)";
+                
+                // Set Transcript Text
+                transcriptText.innerText = dummyData;
+
+            }, 1500);
+        });
+
+        // 3. Event: Copy Button
+        copyBtn.addEventListener('click', () => {
+            const textToCopy = transcriptText.innerText;
+            if(!textToCopy) return;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHTML = copyBtn.innerHTML;
+                
+                // Change Button Style to Green temporarily
+                copyBtn.innerHTML = `<i class="fas fa-check"></i> Copied!`;
+                copyBtn.style.backgroundColor = '#28a745'; // Green
+                copyBtn.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.6)';
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.style.backgroundColor = 'var(--secondary)';
+                    copyBtn.style.boxShadow = 'var(--glow-secondary)';
+                }, 2000);
+            }).catch(err => {
+                console.error("Failed to copy", err);
+            });
+        });
+
+        // 4. Modal Functions
+        function openModal() {
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // Close when clicking outside box
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // 5. Simulate Translation
+        function translateTo(lang) {
+            alert(`Simulating translation to: ${lang}...\n(Real API needed for actual translation)`);
+            closeModal();
+            
+            // Just for effect: update text slightly
+            transcriptText.innerHTML = `--- Translated to ${lang} ---\n\n` + dummyData;
+        }
+
+    </script>
+</body>
+</html>
