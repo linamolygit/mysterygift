@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HD Video Quiz Editor Pro</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Yantramanav:wght@900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Utilities -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+    <!-- Cropper.js -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <!-- Background Removal AI (Fixed CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.0.4/dist/imgly-background-removal.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2575fc;
+            --gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --success: #28a745;
+            --danger: #ff2a2a;
+            --bg: #f4f6f9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin: 0 0 20px; color: #333; }
+
+        /* --- WRAPPER --- */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- CANVAS --- */
+        .canvas-wrapper {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            width: 550px;
+            height: 650px;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        #render-canvas { 
+            width: 550px; 
+            height: 650px; 
+            display: block; 
+        }
+
+        /* --- CONTROLS --- */
+        .controls-panel {
+            background: white; padding: 20px; border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); width: 100%; max-width: 600px;
+        }
+        
+        .control-group label { font-size: 0.85rem; font-weight: 600; color: #666; display: block; margin-bottom: 5px; }
+        .input-box { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-family: inherit; }
+        .input-box:focus { border-color: var(--primary); outline: none; }
+
+        .btn {
+            background: var(--gradient); color: white; border: none; padding: 12px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 1rem; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn.secondary { background: #444; }
+        .btn.danger { background: var(--danger); } 
+        .btn.success { background: var(--success); }
+
+        .options-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .opt-input-group { text-align: center; }
+        .opt-input-group span { font-weight: 900; color: #333; display: block; margin-bottom: 3px; }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-box { 
+            background: white; width: 90%; max-width: 500px; border-radius: 20px; padding: 20px; 
+            position: relative; display: flex; flex-direction: column; max-height: 90vh;
+        }
+        
+        .close-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: #eee; color: #333; border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-size: 1.2rem; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: 0.2s; z-index: 10;
+        }
+        .close-btn:hover { background: #ddd; color: #000; }
+
+        /* Upload Grid & Cards */
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        
+        .upload-card {
+            border: 2px dashed #ccc; border-radius: 10px; 
+            height: 220px; /* Increased height */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; cursor: pointer; transition: 0.2s;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
+            position: relative; overflow: hidden; background-color: #f8f9fa;
+        }
+        .upload-card:hover { border-color: var(--primary); background-color: #f0f4ff; }
+        .upload-card i.main-icon, .upload-card p { pointer-events: none; z-index: 1; }
+        .upload-card p { margin: 0; font-size: 0.9rem; font-weight: 600; color: #555; margin-top: 10px; }
+        .upload-card.has-image i.main-icon, .upload-card.has-image p { display: none; }
+
+        /* IMAGE ACTION BUTTONS */
+        .action-btn {
+            width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: white; border: none; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 14px; transition: transform 0.2s;
+            z-index: 20;
+        }
+        .action-btn:hover { transform: scale(1.1); }
+        
+        /* Top Left: Edit */
+        .btn-edit-img { position: absolute; top: 8px; left: 8px; background: var(--primary); display: none; }
+        
+        /* Top Right: Remove */
+        .btn-remove-img { position: absolute; top: 8px; right: 8px; background: var(--danger); display: none; }
+
+        /* Bottom Center: Magic Wand */
+        .btn-bg-remove { 
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); 
+            background: #9c27b0; width: 40px; height: 40px; font-size: 18px;
+            display: none; 
+        }
+
+        .upload-card.has-image .btn-edit-img,
+        .upload-card.has-image .btn-remove-img,
+        .upload-card.has-image .btn-bg-remove { display: flex; }
+
+        /* Processing Overlay */
+        .processing-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.95); z-index: 30;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .processing-overlay.active { display: flex; }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--primary);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Progress Text */
+        #proc-text { font-size: 0.9rem; font-weight: 600; color: #555; text-align: center; max-width: 80%; }
+
+        /* Crop Container */
+        .crop-wrapper {
+            height: 300px; background: #333; margin: 20px 0; border-radius: 10px; overflow: hidden;
+        }
+        .crop-toolbar {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px;
+        }
+        .tool-btn {
+            padding: 8px 12px; background: #eee; border: none; border-radius: 5px;
+            cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #444;
+        }
+        .tool-btn.active { background: var(--primary); color: white; }
+
+        .color-row { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+        
+        .edit-header-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.5); color: white; border: none;
+            padding: 5px 10px; border-radius: 20px; cursor: pointer; z-index: 50;
+            font-size: 12px;
+        }
+        .edit-header-btn:hover { background: rgba(0,0,0,0.8); }
+
+        @media (max-width: 600px) {
+            .canvas-wrapper { transform: scale(0.65); margin: -100px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>HD Video Quiz Editor Pro</h1>
+
+    <div class="editor-container">
+        <!-- CANVAS -->
+        <div class="canvas-wrapper">
+            <button class="edit-header-btn" onclick="openTextEditor()"><i class="fas fa-pencil-alt"></i> Edit Text</button>
+            <canvas id="render-canvas"></canvas>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls-panel">
+            <div class="control-group" style="margin-bottom: 20px;">
+                <button class="btn" onclick="openUploadModal()">
+                    <i class="fas fa-images"></i> Upload Images
+                </button>
+            </div>
+
+            <div class="control-group">
+                <label>Edit Options</label>
+                <div class="options-inputs">
+                    <div class="opt-input-group">
+                        <span>A</span>
+                        <input type="number" id="optA" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>B</span>
+                        <input type="number" id="optB" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>C</span>
+                        <input type="number" id="optC" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                    <div class="opt-input-group">
+                        <span>D</span>
+                        <input type="number" id="optD" class="input-box" placeholder="000" oninput="requestDraw()">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="anim-btn" class="btn danger" onclick="toggleAnimation()">
+                    <i class="fas fa-play"></i> Start Animation
+                </button>
+                <button id="download-btn" class="btn success" style="display: none;" onclick="downloadVideo()">
+                    <i class="fas fa-download"></i> Download Video
+                </button>
+            </div>
+            
+            <div id="status-msg" style="text-align:center; color:#666; font-size:0.9rem; margin-top:10px; min-height:20px;"></div>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-box">
+            <button class="close-btn" onclick="document.getElementById('uploadModal').classList.remove('active')">&times;</button>
+            <h3 style="margin-top:0;">Select Images</h3>
+            <div class="upload-grid">
+                
+                <!-- Card 1 -->
+                <div class="upload-card" id="card-img1">
+                    <div class="processing-overlay" id="proc-1">
+                        <div class="spinner"></div>
+                        <span id="proc-text-1">Downloading AI Model...<br>(First time takes 10-20s)</span>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="action-btn btn-edit-img" onclick="openCropper(1)" title="Crop"><i class="fas fa-pencil-alt"></i></div>
+                    <div class="action-btn btn-remove-img" onclick="removeImage(1)" title="Clear"><i class="fas fa-times"></i></div>
+                    <div class="action-btn btn-bg-remove" onclick="removeBackground(1)" title="Remove Background (Fast)"><i class="fas fa-wand-magic-sparkles"></i></div>
+
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="document.getElementById('file-img1').click()">
+                        <i class="fas fa-image main-icon" style="font-size: 45px; color: var(--primary);"></i>
+                        <p>Normal Image</p>
+                    </div>
+                    <input type="file" id="file-img1" hidden accept="image/*" onchange="handleFile(this, 1)">
+                </div>
+                
+                <!-- Card 2 -->
+                <div class="upload-card" id="card-img2">
+                    <div class="processing-overlay" id="proc-2">
+                        <div class="spinner"></div>
+                        <span id="proc-text-2">Downloading AI Model...<br>(First time takes 10-20s)</span>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="action-btn btn-edit-img" onclick="openCropper(2)" title="Crop"><i class="fas fa-pencil-alt"></i></div>
+                    <div class="action-btn btn-remove-img" onclick="removeImage(2)" title="Clear"><i class="fas fa-times"></i></div>
+                    <div class="action-btn btn-bg-remove" onclick="removeBackground(2)" title="Remove Background (Fast)"><i class="fas fa-wand-magic-sparkles"></i></div>
+
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="document.getElementById('file-img2').click()">
+                        <i class="fas fa-magic main-icon" style="font-size: 45px; color: #9c27b0;"></i>
+                        <p>Revealed Image</p>
+                    </div>
+                    <input type="file" id="file-img2" hidden accept="image/*" onchange="handleFile(this, 2)">
+                </div>
+
+            </div>
+            <button class="btn" style="margin-top:20px;" onclick="document.getElementById('uploadModal').classList.remove('active')">Done</button>
+        </div>
+    </div>
+
+    <!-- CROP MODAL -->
+    <div class="modal-overlay" id="cropModal">
+        <div class="modal-box" style="width: 100%; max-width: 600px;">
+            <h3 style="margin-top:0;">Crop Image</h3>
+            <div class="crop-wrapper">
+                <img id="image-to-crop" src="" style="max-width: 100%; display: block;">
+            </div>
+            <div class="crop-toolbar">
+                <button class="tool-btn" onclick="cropper.setAspectRatio(NaN)">Free</button>
+                <button class="tool-btn" onclick="cropper.setAspectRatio(9/16)">9:16</button>
+                <button class="tool-btn" onclick="cropper.setAspectRatio(1)">1:1</button>
+                <button class="tool-btn" onclick="cropper.rotate(90)"><i class="fas fa-redo"></i></button>
+                <button class="tool-btn" onclick="cropper.reset()"><i class="fas fa-sync"></i></button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn secondary" onclick="document.getElementById('cropModal').classList.remove('active')">Cancel</button>
+                <button class="btn" onclick="applyCrop()">Apply Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEXT EDITOR MODAL -->
+    <div class="modal-overlay" id="textModal">
+        <div class="modal-box">
+            <button class="close-btn" onclick="document.getElementById('textModal').classList.remove('active')">&times;</button>
+            <h3 style="margin-top:0;">Edit Header</h3>
+            <textarea id="textEditorInput" class="input-box" style="height:80px; margin-bottom:15px; font-family: 'Poppins';"></textarea>
+            
+            <div class="color-row"><span>Background</span> <div id="bg-picker"></div></div>
+            <div class="color-row"><span>Main Text</span> <div id="text-picker"></div></div>
+            <div class="color-row"><span>Highlight</span> <div id="highlight-picker"></div></div>
+
+            <button class="btn" onclick="addHighlight()">Highlight Selected [[ ]]</button>
+            <button class="btn secondary" style="margin-top:10px;" onclick="saveText()">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const canvas = document.getElementById('render-canvas');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const LOGICAL_WIDTH = 550;
+        const LOGICAL_HEIGHT = 650;
+        
+        canvas.width = LOGICAL_WIDTH * dpr;
+        canvas.height = LOGICAL_HEIGHT * dpr;
+        canvas.style.width = LOGICAL_WIDTH + 'px';
+        canvas.style.height = LOGICAL_HEIGHT + 'px';
+        ctx.scale(dpr, dpr);
+
+        const HEADER_H = 110;
+        const BOTTOM_H = 80; 
+        const MIDDLE_H = 650 - HEADER_H - BOTTOM_H; 
+        const SLIDER_ZONE_W = 100; 
+        const BAR_WIDTH = 20; 
+        const PILL_WIDTH = 45; 
+        const PILL_HEIGHT = 80; 
+        const CYCLE_TIME_ONE_WAY = 1.5;
+        const LEFT_OFFSET = 15; 
+
+        // --- DATA STATE ---
+        let currentHeaderData = {
+            text: "दम है तो बताओ [[कितना]] नंबर लिखा है",
+            bgColor: "#ff2a2a",
+            textColor: "#ffff00",
+            highlightColor: "#00ffff"
+        };
+
+        let isAnimating = false;
+        let lastTime = 0;
+        let pillY = 0; 
+        let pillDir = -1; 
+        let hasBouncedTop = false; 
+        let completedCycles = 0;
+
+        let img1 = new Image();
+        let img2 = new Image();
+        let originalImg1Src = 'https://via.placeholder.com/400x400/eee/999?text=Image+1';
+        let originalImg2Src = 'https://via.placeholder.com/400x400/ddd/555?text=Image+2';
+        
+        let currentDisplayImg = img1;
+        let swapTimer = 0;
+        let lastCrossDir = 0;
+        let videoBlobURL = null;
+
+        let cropper = null;
+        let activeCropIndex = 1; 
+        let rawFiles = { 1: null, 2: null }; 
+
+        img1.src = originalImg1Src;
+        img2.src = originalImg2Src;
+        img1.onload = () => requestDraw();
+
+        // --- PICKR ---
+        const pickrConfig = { theme: 'classic', components: { preview: true, opacity: true, hue: true, interaction: { hex: true, input: true, save: true } } };
+        const bgPickr = Pickr.create({ el: '#bg-picker', default: '#ff2a2a', ...pickrConfig });
+        const textPickr = Pickr.create({ el: '#text-picker', default: '#ffff00', ...pickrConfig });
+        const highlightPickr = Pickr.create({ el: '#highlight-picker', default: '#00ffff', ...pickrConfig });
+
+        function openTextEditor() {
+            document.getElementById('textEditorInput').value = currentHeaderData.text;
+            bgPickr.setColor(currentHeaderData.bgColor);
+            textPickr.setColor(currentHeaderData.textColor);
+            highlightPickr.setColor(currentHeaderData.highlightColor);
+            document.getElementById('textModal').classList.add('active');
+        }
+        function addHighlight() {
+            const ta = document.getElementById('textEditorInput');
+            const v = ta.value;
+            if(ta.selectionStart === ta.selectionEnd) return;
+            ta.value = v.slice(0, ta.selectionStart) + `[[${v.slice(ta.selectionStart, ta.selectionEnd)}]]` + v.slice(ta.selectionEnd);
+        }
+        function saveText() {
+            currentHeaderData.text = document.getElementById('textEditorInput').value;
+            currentHeaderData.bgColor = bgPickr.getColor().toHEXA().toString();
+            currentHeaderData.textColor = textPickr.getColor().toHEXA().toString();
+            currentHeaderData.highlightColor = highlightPickr.getColor().toHEXA().toString();
+            document.getElementById('textModal').classList.remove('active');
+            requestDraw();
+        }
+
+        function drawHeaderNative() {
+            ctx.fillStyle = currentHeaderData.bgColor;
+            ctx.fillRect(0, 0, LOGICAL_WIDTH, HEADER_H);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, HEADER_H - 4, LOGICAL_WIDTH, 4);
+
+            ctx.font = '900 38px "Yantramanav", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const rawText = currentHeaderData.text;
+            const parts = rawText.split(/(\[\[.*?\]\])/g);
+            
+            let totalWidth = 0;
+            const measurements = parts.map(part => {
+                let text = part;
+                let isHighlight = false;
+                if(part.startsWith('[[') && part.endsWith(']]')) {
+                    text = part.slice(2, -2);
+                    isHighlight = true;
+                }
+                const w = ctx.measureText(text).width;
+                totalWidth += w;
+                return { text, w, isHighlight };
+            });
+
+            let currentX = (LOGICAL_WIDTH - totalWidth) / 2;
+            const centerY = HEADER_H / 2;
+            ctx.shadowColor = "#000"; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.shadowBlur = 0;
+
+            measurements.forEach(item => {
+                ctx.fillStyle = item.isHighlight ? currentHeaderData.highlightColor : currentHeaderData.textColor;
+                ctx.fillText(item.text, currentX + (item.w / 2), centerY);
+                currentX += item.w;
+            });
+            ctx.shadowColor = "transparent"; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+        }
+
+        // --- UPLOAD, CROP & BG REMOVAL ---
+        function openUploadModal() { document.getElementById('uploadModal').classList.add('active'); }
+        
+        function handleFile(input, n) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const src = e.target.result;
+                    rawFiles[n] = src; 
+                    updateImage(n, src);
+                    input.value = '';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function updateImage(n, src) {
+            if(n === 1) img1.src = src;
+            else img2.src = src;
+            const card = document.getElementById(n === 1 ? 'card-img1' : 'card-img2');
+            card.style.backgroundImage = `url(${src})`;
+            card.classList.add('has-image');
+            setTimeout(requestDraw, 100);
+        }
+
+        function removeImage(n) {
+            if(event) event.stopPropagation();
+            const card = document.getElementById(n === 1 ? 'card-img1' : 'card-img2');
+            card.style.backgroundImage = 'none';
+            card.classList.remove('has-image');
+            if(n === 1) img1.src = originalImg1Src; else img2.src = originalImg2Src;
+            rawFiles[n] = null;
+            requestDraw();
+        }
+
+        function openCropper(n) {
+            if(event) event.stopPropagation();
+            activeCropIndex = n;
+            const src = rawFiles[n] || (n === 1 ? img1.src : img2.src);
+            if(!src || src.includes('placeholder')) return; 
+
+            const imgEl = document.getElementById('image-to-crop');
+            imgEl.src = src;
+            document.getElementById('cropModal').classList.add('active');
+
+            if (cropper) { cropper.destroy(); }
+            cropper = new Cropper(imgEl, { viewMode: 1, dragMode: 'move', autoCropArea: 1 });
+        }
+
+        function applyCrop() {
+            if(!cropper) return;
+            const canvasData = cropper.getCroppedCanvas();
+            const croppedSrc = canvasData.toDataURL('image/png');
+            updateImage(activeCropIndex, croppedSrc);
+            document.getElementById('cropModal').classList.remove('active');
+            cropper.destroy();
+            cropper = null;
+        }
+
+        // --- FIXED: BG REMOVAL with PROPER CDN CONFIG ---
+        // We configure imgly to fetch assets from a public CDN that allows CORS
+        async function removeBackground(n) {
+            if(event) event.stopPropagation();
+            
+            const src = rawFiles[n] || (n === 1 ? img1.src : img2.src);
+            if(!src || src.includes('placeholder')) return alert("Upload an image first.");
+
+            const overlay = document.getElementById(`proc-${n}`);
+            const statusText = document.getElementById(`proc-text-${n}`);
+            overlay.classList.add('active');
+
+            statusText.innerHTML = "Preparing Image...";
+
+            try {
+                // 1. Downscale to speed up
+                const resizedSrc = await downscaleImage(src, 800);
+                
+                statusText.innerHTML = "Processing AI Model...<br>(Please wait)";
+                
+                // 2. Remove BG with specific config
+                // publicPath tells it where to find .wasm and .onnx files
+                const blob = await imglyRemoveBackground(resizedSrc, {
+                    publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.0.3/dist/"
+                });
+
+                const url = URL.createObjectURL(blob);
+                updateImage(n, url);
+                overlay.classList.remove('active');
+
+            } catch (err) {
+                console.error("BG Removal Error:", err);
+                alert("Could not remove background. Check internet or try a different image.");
+                overlay.classList.remove('active');
+            }
+        }
+
+        function downscaleImage(dataUrl, maxSize = 800) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                    } else {
+                        if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = dataUrl;
+            });
+        }
+
+        // --- ANIMATION & RECORDING ---
+        let mediaRecorder, chunks = [];
+
+        function toggleAnimation() {
+            const btn = document.getElementById('anim-btn');
+            const dlBtn = document.getElementById('download-btn');
+            const status = document.getElementById('status-msg');
+
+            if (!isAnimating) {
+                isAnimating = true;
+                btn.innerHTML = '<i class="fas fa-stop"></i> Stop Animation';
+                btn.classList.remove('danger');
+                btn.classList.add('secondary'); 
+                dlBtn.style.display = 'none';
+                status.innerText = "Recording... (Auto-stop after 2 cycles)";
+                
+                lastTime = performance.now();
+                pillY = MIDDLE_H - PILL_HEIGHT;
+                pillDir = -1;
+                hasBouncedTop = false; 
+                completedCycles = 0; 
+                
+                requestAnimationFrame(loop);
+                setTimeout(startAutoRecording, 200);
+
+            } else {
+                stopAnimationLogic();
+            }
+        }
+
+        function stopAnimationLogic() {
+            isAnimating = false;
+            const btn = document.getElementById('anim-btn');
+            btn.innerHTML = '<i class="fas fa-play"></i> Start Animation';
+            btn.classList.remove('secondary');
+            btn.classList.add('danger');
+            stopAutoRecording();
+            currentDisplayImg = img1;
+            pillY = MIDDLE_H - PILL_HEIGHT;
+            draw(0);
+        }
+
+        function startAutoRecording() {
+            if(!isAnimating) return;
+            const stream = canvas.captureStream(30);
+            const options = { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 5000000 };
+            try { mediaRecorder = new MediaRecorder(stream, options); } catch (e) { mediaRecorder = new MediaRecorder(stream); }
+
+            chunks = [];
+            mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, {type:'video/webm'});
+                videoBlobURL = URL.createObjectURL(blob);
+                document.getElementById('download-btn').style.display = 'flex';
+                document.getElementById('status-msg').innerHTML = "<span style='color:green'>Recording Complete!</span>";
+            };
+            mediaRecorder.start();
+        }
+
+        function stopAutoRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); }
+        }
+
+        function downloadVideo() {
+            if (!videoBlobURL) return;
+            const a = document.createElement('a');
+            a.href = videoBlobURL;
+            a.download = `HD-quiz-video-${Date.now()}.webm`;
+            a.click();
+        }
+
+        function loop(t) {
+            if (!isAnimating) return;
+            const dt = (t - lastTime) / 1000;
+            lastTime = t;
+            updatePhysics(dt);
+            draw(dt);
+            requestAnimationFrame(loop);
+        }
+
+        function updatePhysics(dt) {
+            const travelDist = MIDDLE_H - PILL_HEIGHT;
+            const speed = travelDist / CYCLE_TIME_ONE_WAY;
+
+            pillY += pillDir * speed * dt;
+
+            // 2-Cycle Logic
+            if (pillY <= 0) { pillY = 0; pillDir = 1; hasBouncedTop = true; }
+            if (pillY >= travelDist) { 
+                pillY = travelDist; pillDir = -1; 
+                if (hasBouncedTop) {
+                    completedCycles++;
+                    hasBouncedTop = false; 
+                    if (completedCycles >= 2) {
+                        stopAnimationLogic(); 
+                        return;
+                    }
+                }
+            }
+
+            // Swap
+            const pillCenter = pillY + PILL_HEIGHT/2;
+            const barCenter = MIDDLE_H / 2;
+            
+            if (Math.abs(pillCenter - barCenter) < (PILL_HEIGHT/2 + 5)) {
+                if (lastCrossDir !== pillDir) {
+                    currentDisplayImg = img2;
+                    swapTimer = 0.3; 
+                    lastCrossDir = pillDir;
+                }
+            } else if (Math.abs(pillCenter - barCenter) > 20) {
+                lastCrossDir = 0;
+            }
+
+            if (swapTimer > 0) {
+                swapTimer -= dt;
+                if (swapTimer <= 0) currentDisplayImg = img1;
+            }
+        }
+
+        function requestDraw() { if(!isAnimating) draw(0); }
+
+        function draw(dt) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+            drawHeaderNative();
+
+            const midY = HEADER_H;
+            ctx.fillStyle = '#f9f9f9'; 
+            ctx.fillRect(0, midY, SLIDER_ZONE_W, MIDDLE_H);
+            
+            const zoneCenterX = SLIDER_ZONE_W / 2;
+            const barCenterX = zoneCenterX + LEFT_OFFSET;
+            const barX = barCenterX - (BAR_WIDTH / 2);
+
+            roundRect(ctx, barX, midY + 10, BAR_WIDTH, MIDDLE_H - 20, 10, '#000'); 
+
+            const dotY = midY + (MIDDLE_H/2);
+            const dotRadius = PILL_WIDTH / 2; 
+            ctx.beginPath(); ctx.arc(barCenterX, dotY, dotRadius, 0, Math.PI*2);
+            ctx.fillStyle = 'red'; ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth = 2; ctx.stroke();
+
+            const pillDrawY = midY + pillY;
+            const pillX = barCenterX - (PILL_WIDTH / 2);
+            const grad = ctx.createLinearGradient(0, pillDrawY, 0, pillDrawY + PILL_HEIGHT);
+            grad.addColorStop(0, '#6a11cb'); grad.addColorStop(1, '#2575fc');
+            roundRect(ctx, pillX, pillDrawY, PILL_WIDTH, PILL_HEIGHT, 22, grad);
+
+            const imgX = SLIDER_ZONE_W;
+            const imgW = 550 - SLIDER_ZONE_W;
+            
+            // Draw Image (CONTAIN - Fit Inside)
+            if (currentDisplayImg && currentDisplayImg.complete) {
+                const imgW_actual = currentDisplayImg.width;
+                const imgH_actual = currentDisplayImg.height;
+
+                // Calculate scaling factor to fit strictly inside container
+                const scale = Math.min(imgW / imgW_actual, MIDDLE_H / imgH_actual);
+                
+                const w = imgW_actual * scale;
+                const h = imgH_actual * scale;
+                
+                // Center the image
+                const x = imgX + (imgW - w) / 2;
+                const y = midY + (MIDDLE_H - h) / 2;
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(currentDisplayImg, x, y, w, h);
+            } else {
+                ctx.fillStyle = '#eee'; ctx.fillRect(imgX, midY, imgW, MIDDLE_H);
+            }
+
+            const botY = HEADER_H + MIDDLE_H;
+            ctx.fillStyle = '#ddd'; ctx.fillRect(0, botY, 550, 2);
+
+            const labels = ['A', 'B', 'C', 'D'];
+            const inputs = ['optA', 'optB', 'optC', 'optD'];
+            const sectionW = 550 / 4;
+
+            ctx.font = 'bold 20px Poppins';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < 4; i++) {
+                const x = i * sectionW;
+                const cx = x + sectionW / 2;
+                const cy = botY + BOTTOM_H / 2;
+                
+                ctx.fillStyle = '#f0f2f5';
+                roundRect(ctx, x + 5, botY + 10, sectionW - 10, BOTTOM_H - 20, 10, '#f0f2f5');
+                ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.stroke();
+                
+                const val = document.getElementById(inputs[i]).value || '...';
+                ctx.fillStyle = '#ff2a2a'; ctx.fillText(labels[i] + ".", cx - 20, cy);
+                ctx.fillStyle = '#333'; ctx.fillText(val, cx + 15, cy);
+            }
+        }
+
+        function roundRect(ctx, x, y, w, h, r, fill) {
+            ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r);
+            ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+            if(fill) { ctx.fillStyle = fill; ctx.fill(); }
+        }
+
+        requestDraw();
+    </script>
+</body>
+</html>
